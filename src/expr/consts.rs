@@ -1,10 +1,19 @@
-use std::{rc::Rc, cell::RefCell, collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{
+    cell::RefCell,
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    rc::Rc,
+};
 
-use super::{Id, ExprScope, var::VarValues, ExprAll, Expr};
-
+use super::{var::VarValues, Expr, ExprAll, ExprScope, Id};
 
 #[derive(Debug, Clone, Copy, Hash)]
 pub struct Const(pub i32);
+impl Const {
+    pub fn pow(self, other: Self) -> Const {
+        Const(self.0.pow(other.0 as u32))
+    }
+}
 impl std::ops::Add for Const {
     type Output = Const;
     fn add(mut self, rhs: Self) -> Self::Output {
@@ -16,6 +25,13 @@ impl std::ops::Mul for Const {
     type Output = Const;
     fn mul(mut self, rhs: Self) -> Self::Output {
         self.0 *= rhs.0;
+        self
+    }
+}
+impl std::ops::Div for Const {
+    type Output = Const;
+    fn div(mut self, rhs: Self) -> Self::Output {
+        self.0 /= rhs.0;
         self
     }
 }
@@ -69,13 +85,16 @@ impl Expr for ExConst {
 }
 impl PartialEq for ExConst {
     fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
+        self.id() == other.id()
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::expr::{ExprScope, consts::{Const, ExConst}};
+    use crate::expr::{
+        consts::{Const, ExConst},
+        ExprScope,
+    };
 
     #[test]
     fn hash_equality() {

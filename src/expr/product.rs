@@ -1,8 +1,16 @@
-use std::{rc::Rc, cell::RefCell, collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{
+    cell::RefCell,
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    rc::Rc,
+};
 
-use super::{ExprScope, associative_commutative::{ChildrenAssociativeCommutative, ExprAssociativeCommuttative}, Id, Expr, var::VarValues, consts::Const, ExprAll};
-
-
+use super::{
+    associative_commutative::{ChildrenAssociativeCommutative, ExprAssociativeCommuttative},
+    consts::Const,
+    var::VarValues,
+    Expr, ExprAll, ExprScope, Id,
+};
 
 #[derive(Debug)]
 pub struct ExProduct(Id, ChildrenAssociativeCommutative);
@@ -25,7 +33,11 @@ impl ExProduct {
 }
 impl Expr for ExProduct {
     fn eval(&self, vars: &VarValues) -> Const {
-        self.1.get_expralls().into_iter().map(|v|v.eval(vars)).sum()
+        self.1
+            .get_expralls()
+            .into_iter()
+            .map(|v| v.eval(vars))
+            .product()
     }
     fn exprall(self: &Rc<Self>) -> ExprAll {
         ExprAll::Product(self.clone())
@@ -50,16 +62,19 @@ impl ExprAssociativeCommuttative for ExProduct {
 }
 impl PartialEq for ExProduct {
     fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
+        self.id() == other.id()
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::expr::{ExprScope, consts::{Const, ExConst}, ExprAll, sum::ExSum};
+    use crate::expr::{
+        consts::{Const, ExConst},
+        sum::ExSum,
+        ExprAll, ExprScope,
+    };
 
-    
-#[test]
+    #[test]
     fn hash_equality() {
         let scope = ExprScope::new();
 
@@ -70,27 +85,42 @@ mod test {
         ];
 
         let sums = [
-            ExSum::new(&scope, vec![
-                ExprAll::Const(consts[0].clone()),
-                ExprAll::Const(consts[0].clone()),
-            ]),
-            ExSum::new(&scope, vec![
-                ExprAll::Const(consts[0].clone()),
-                ExprAll::Const(consts[1].clone()),
-            ]),
-            ExSum::new(&scope, vec![
-                ExprAll::Const(consts[2].clone()),
-                ExprAll::Const(consts[1].clone()),
-            ]),
-            ExSum::new(&scope, vec![
-                ExprAll::Const(consts[0].clone()),
-                ExprAll::Const(consts[2].clone()),
-            ]),
-            ExSum::new(&scope, vec![
-                ExprAll::Const(consts[0].clone()),
-                ExprAll::Const(consts[2].clone()),
-                ExprAll::Const(consts[2].clone()),
-            ]),
+            ExSum::new(
+                &scope,
+                vec![
+                    ExprAll::Const(consts[0].clone()),
+                    ExprAll::Const(consts[0].clone()),
+                ],
+            ),
+            ExSum::new(
+                &scope,
+                vec![
+                    ExprAll::Const(consts[0].clone()),
+                    ExprAll::Const(consts[1].clone()),
+                ],
+            ),
+            ExSum::new(
+                &scope,
+                vec![
+                    ExprAll::Const(consts[2].clone()),
+                    ExprAll::Const(consts[1].clone()),
+                ],
+            ),
+            ExSum::new(
+                &scope,
+                vec![
+                    ExprAll::Const(consts[0].clone()),
+                    ExprAll::Const(consts[2].clone()),
+                ],
+            ),
+            ExSum::new(
+                &scope,
+                vec![
+                    ExprAll::Const(consts[0].clone()),
+                    ExprAll::Const(consts[2].clone()),
+                    ExprAll::Const(consts[2].clone()),
+                ],
+            ),
         ];
 
         assert_eq!(sums[0], sums[1]);

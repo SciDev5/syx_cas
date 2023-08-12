@@ -1,8 +1,11 @@
-use std::{hash::{Hash, Hasher}, collections::HashMap, rc::Rc, cell::RefCell};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    hash::{Hash, Hasher},
+    rc::Rc,
+};
 
-use super::{consts::Const, Id, ExprScope, Expr, ExprAll};
-
-
+use super::{consts::Const, Expr, ExprAll, ExprScope, Id};
 
 #[derive(Debug, Clone, Copy, Eq)]
 pub struct Var(&'static str, u64);
@@ -32,8 +35,6 @@ impl VarValues {
     }
 }
 
-
-
 #[derive(Debug)]
 pub struct ExVar(Id, Var);
 impl ExVar {
@@ -61,13 +62,16 @@ impl Expr for ExVar {
 }
 impl PartialEq for ExVar {
     fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
+        self.id() == other.id()
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::expr::{ExprScope, var::{Var, ExVar}};
+    use crate::expr::{
+        var::{ExVar, Var},
+        ExprScope,
+    };
 
     #[test]
     fn hash_equality() {
