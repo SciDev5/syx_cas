@@ -45,6 +45,9 @@ impl Expr for ExProduct {
     fn id(&self) -> Id {
         self.0
     }
+    fn exprfmtprecedence(self: &Rc<Self>) -> crate::util::fmt_latex::ExprFmtPrecedence {
+        crate::util::fmt_latex::ExprFmtPrecedence::MD
+    }
 }
 impl ExprAssociativeCommuttative for ExProduct {
     fn reduce_consts<I: Iterator<Item = Const>>(consts: I) -> Const {

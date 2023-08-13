@@ -1,5 +1,6 @@
 use syxtensor::expr::{
     consts::{Const, ExConst},
+    division::ExDivide,
     exponentiation::ExExponentiate,
     product::ExProduct,
     sum::ExSum,
@@ -17,29 +18,53 @@ fn main() {
     let a_ = ExVar::new(&scope, var_a);
 
     let a_plus_b = ExSum::new(
+        // 223
         &scope,
         vec![
             a.exprall(), // 3
             ExExponentiate::new(
-                &scope,      // 216
-                b.exprall(), // 6
-                a.exprall(), // 6
+                // 216
+                &scope,
+                ExDivide::new(
+                    // 6
+                    &scope,
+                    ExProduct::new(
+                        // 12
+                        &scope,
+                        vec![
+                            b.exprall(),  // 6
+                            a_.exprall(), // 2
+                        ],
+                    )
+                    .exprall(),
+                    a_.exprall(), // 2
+                )
+                .exprall(),
+                a.exprall(), // 3
             )
             .exprall(),
             ExProduct::new(
+                // 4
                 &scope,
                 vec![
-                    // 4
                     a_.exprall(), // 2
                     a_.exprall(), // 2
+                    ExDivide::new(
+                        // 1
+                        &scope,
+                        ExConst::new(&scope, Const(2)).exprall(), // 2
+                        a_.exprall(),                             // 2
+                    )
+                    .exprall(),
                 ],
             )
             .exprall(),
         ],
-    ); // 223
+    );
 
     let mut vars = VarValues::new();
     vars.set(var_a, Const(2));
 
-    println!("{:?}", a_plus_b.eval(&vars));
+    println!("{}", a_plus_b.eval(&vars));
+    println!("{}", a_plus_b.exprall());
 }

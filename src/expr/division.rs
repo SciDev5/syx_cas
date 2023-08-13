@@ -24,6 +24,12 @@ impl ExDivide {
             .or_insert_with(|| Rc::new(Self(id, numerator, denominator)))
             .clone()
     }
+    pub fn numerator(&self) -> &ExprAll {
+        &self.1
+    }
+    pub fn denominator(&self) -> &ExprAll {
+        &self.2
+    }
 }
 impl Expr for ExDivide {
     fn eval(&self, vars: &VarValues) -> Const {
@@ -37,6 +43,9 @@ impl Expr for ExDivide {
     }
     fn id(&self) -> Id {
         self.0
+    }
+    fn exprfmtprecedence(self: &Rc<Self>) -> crate::util::fmt_latex::ExprFmtPrecedence {
+        crate::util::fmt_latex::ExprFmtPrecedence::MD
     }
 }
 impl PartialEq for ExDivide {

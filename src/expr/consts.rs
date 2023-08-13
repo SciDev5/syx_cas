@@ -1,6 +1,7 @@
 use std::{
     cell::RefCell,
     collections::hash_map::DefaultHasher,
+    fmt::Display,
     hash::{Hash, Hasher},
     rc::Rc,
 };
@@ -53,6 +54,11 @@ impl std::iter::Product<Const> for Const {
         prod
     }
 }
+impl Display for Const {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[derive(Debug)]
 pub struct ExConst(Id, pub Const);
@@ -81,6 +87,9 @@ impl Expr for ExConst {
     }
     fn id(&self) -> Id {
         self.0
+    }
+    fn exprfmtprecedence(self: &Rc<Self>) -> crate::util::fmt_latex::ExprFmtPrecedence {
+        crate::util::fmt_latex::ExprFmtPrecedence::V // TODO: depends on the const (complex nums are AS)
     }
 }
 impl PartialEq for ExConst {

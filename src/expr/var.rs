@@ -48,6 +48,9 @@ impl ExVar {
             .or_insert_with(|| Rc::new(Self(id, var)))
             .clone()
     }
+    pub fn var_name(&self) -> &'static str {
+        self.1 .0
+    }
 }
 impl Expr for ExVar {
     fn eval(&self, vars: &VarValues) -> Const {
@@ -58,6 +61,9 @@ impl Expr for ExVar {
     }
     fn id(&self) -> Id {
         self.0
+    }
+    fn exprfmtprecedence(self: &Rc<Self>) -> crate::util::fmt_latex::ExprFmtPrecedence {
+        crate::util::fmt_latex::ExprFmtPrecedence::V
     }
 }
 impl PartialEq for ExVar {

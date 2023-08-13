@@ -45,6 +45,9 @@ impl Expr for ExSum {
     fn id(&self) -> Id {
         self.0
     }
+    fn exprfmtprecedence(self: &Rc<Self>) -> crate::util::fmt_latex::ExprFmtPrecedence {
+        crate::util::fmt_latex::ExprFmtPrecedence::AS
+    }
 }
 impl ExprAssociativeCommuttative for ExSum {
     fn reduce_consts<I: Iterator<Item = Const>>(consts: I) -> Const {

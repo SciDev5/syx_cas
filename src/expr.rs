@@ -1,4 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
+
+use crate::util::fmt_latex::{ExprFmt, ExprFmtPrecedence};
 
 use self::{
     consts::{Const, ExConst},
@@ -49,6 +51,7 @@ pub trait Expr {
     fn eval(&self, vars: &VarValues) -> Const;
     fn id(&self) -> Id;
     fn exprall(self: &Rc<Self>) -> ExprAll;
+    fn exprfmtprecedence(self: &Rc<Self>) -> ExprFmtPrecedence;
 }
 
 #[derive(Debug, Clone)]
@@ -61,7 +64,7 @@ pub enum ExprAll {
     Var(Rc<ExVar>),
 }
 impl ExprAll {
-    fn eval(&self, vars: &VarValues) -> Const {
+    pub fn eval(&self, vars: &VarValues) -> Const {
         match self {
             Self::Const(v) => v.eval(vars),
             Self::Var(v) => v.eval(vars),
@@ -69,6 +72,16 @@ impl ExprAll {
             Self::Product(v) => v.eval(vars),
             Self::Exponent(v) => v.eval(vars),
             Self::Divide(v) => v.eval(vars),
+        }
+    }
+    pub fn exprfmtprecedence(&self) -> ExprFmtPrecedence {
+        match self {
+            Self::Const(v) => v.exprfmtprecedence(),
+            Self::Var(v) => v.exprfmtprecedence(),
+            Self::Sum(v) => v.exprfmtprecedence(),
+            Self::Product(v) => v.exprfmtprecedence(),
+            Self::Exponent(v) => v.exprfmtprecedence(),
+            Self::Divide(v) => v.exprfmtprecedence(),
         }
     }
     fn get_hash(&self) -> u64 {
@@ -87,5 +100,11 @@ impl ExprAll {
             // 0x4ac6_cb03_d793_4d05
             // 0x0a00_7007_983d_5738
         }
+    }
+}
+impl Display for ExprAll {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let e = ExprFmt::new(self);
+        write!(f, "{}", e)
     }
 }
