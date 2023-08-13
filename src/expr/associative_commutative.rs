@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
     rc::Rc,
@@ -7,7 +6,7 @@ use std::{
 
 use super::{
     consts::{Const, ExConst},
-    Expr, ExprAll, ExprScope,
+    Expr, ExprAll,
 };
 
 pub trait ExprAssociativeCommuttative {
@@ -29,10 +28,24 @@ impl ChildrenAssociativeCommutative {
             .chain(self.non_consts.iter().map(Clone::clone))
             .collect()
     }
-    pub fn new<T: ExprAssociativeCommuttative>(
-        scope: Rc<RefCell<ExprScope>>,
-        raw: Vec<ExprAll>,
-    ) -> Self {
+    pub fn get_expralls_filtering<F: FnOnce(&Const) -> bool>(
+        &self,
+        exclude_const_if: F,
+    ) -> Vec<ExprAll> {
+        if self.non_consts.len() > 0 {
+            (if exclude_const_if(&self.consts_reduced.1) {
+                vec![]
+            } else {
+                vec![self.consts_reduced.exprall()]
+            })
+            .into_iter()
+            .chain(self.non_consts.iter().map(Clone::clone))
+            .collect()
+        } else {
+            vec![self.consts_reduced.exprall()]
+        }
+    }
+    pub fn new<T: ExprAssociativeCommuttative>(raw: Vec<ExprAll>) -> Self {
         let mut consts = vec![];
         let mut non_consts = vec![];
         for ex in raw.into_iter().flat_map(|it| match T::associates_with(it) {
@@ -44,8 +57,7 @@ impl ChildrenAssociativeCommutative {
                 ex => non_consts.push(ex),
             }
         }
-        let consts_reduced =
-            ExConst::new(&scope, T::reduce_consts(consts.into_iter().map(|v| v.1)));
+        let consts_reduced = ExConst::new(T::reduce_consts(consts.into_iter().map(|v| v.1)));
 
         let (precalculated_hash, precalculated_hash_except_consts) =
             Self::precalculate_hashes(&consts_reduced, &non_consts);
@@ -97,63 +109,43 @@ mod test {
         consts::{Const, ExConst},
         product::ExProduct,
         var::{ExVar, Var},
-        Expr, ExprScope,
+        Expr,
     };
 
     #[test]
     fn precalculated_hashes() {
-        let scope = ExprScope::new();
-
         let consts = [
-            ExConst::new(&scope, Const(0)),
-            ExConst::new(&scope, Const(1)),
-            ExConst::new(&scope, Const(2)),
+            ExConst::new(Const(0)),
+            ExConst::new(Const(1)),
+            ExConst::new(Const(2)),
         ];
-        let vars = [
-            ExVar::new(&scope, Var::new("a")),
-            ExVar::new(&scope, Var::new("b")),
-        ];
+        let vars = [ExVar::new(Var::new("a")), ExVar::new(Var::new("b"))];
 
         let products = [
-            ExProduct::new(
-                &scope,
-                vec![
-                    // 2 * a
-                    consts[2].exprall(),
-                    vars[0].exprall(),
-                ],
-            ),
-            ExProduct::new(
-                &scope,
-                vec![
-                    // 1 * 2 * a
-                    consts[2].exprall(),
-                    consts[1].exprall(),
-                    vars[0].exprall(),
-                ],
-            ),
-            ExProduct::new(
-                &scope,
-                vec![
-                    // 1 * a
-                    consts[1].exprall(),
-                    vars[0].exprall(),
-                ],
-            ),
-            ExProduct::new(
-                &scope,
-                vec![
-                    // a
-                    vars[0].exprall(),
-                ],
-            ),
-            ExProduct::new(
-                &scope,
-                vec![
-                    // b
-                    vars[1].exprall(),
-                ],
-            ),
+            ExProduct::new(vec![
+                // 2 * a
+                consts[2].exprall(),
+                vars[0].exprall(),
+            ]),
+            ExProduct::new(vec![
+                // 1 * 2 * a
+                consts[2].exprall(),
+                consts[1].exprall(),
+                vars[0].exprall(),
+            ]),
+            ExProduct::new(vec![
+                // 1 * a
+                consts[1].exprall(),
+                vars[0].exprall(),
+            ]),
+            ExProduct::new(vec![
+                // a
+                vars[0].exprall(),
+            ]),
+            ExProduct::new(vec![
+                // b
+                vars[1].exprall(),
+            ]),
         ];
 
         assert_eq!(

@@ -1,6 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
-
-use crate::util::fmt_latex::{ExprFmt, ExprFmtPrecedence};
+use std::rc::Rc;
 
 use self::{
     consts::{Const, ExConst},
@@ -19,29 +17,6 @@ pub mod product;
 pub mod sum;
 pub mod var;
 
-#[derive(Debug)]
-pub struct ExprScope {
-    sums: HashMap<Id, Rc<ExSum>>,
-    products: HashMap<Id, Rc<ExProduct>>,
-    exponents: HashMap<Id, Rc<ExExponentiate>>,
-    divisions: HashMap<Id, Rc<ExDivide>>,
-    consts: HashMap<Id, Rc<ExConst>>,
-    vars: HashMap<Id, Rc<ExVar>>,
-}
-
-impl ExprScope {
-    pub fn new() -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(Self {
-            sums: HashMap::new(),
-            products: HashMap::new(),
-            exponents: HashMap::new(),
-            divisions: HashMap::new(),
-            consts: HashMap::new(),
-            vars: HashMap::new(),
-        }))
-    }
-}
-
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Id {
     pub content_hash: u64,
@@ -50,8 +25,8 @@ pub struct Id {
 pub trait Expr {
     fn eval(&self, vars: &VarValues) -> Const;
     fn id(&self) -> Id;
+    /** Derivation may include simple reductions if possible. */
     fn exprall(self: &Rc<Self>) -> ExprAll;
-    fn exprfmtprecedence(self: &Rc<Self>) -> ExprFmtPrecedence;
 }
 
 #[derive(Debug, Clone)]
@@ -74,16 +49,6 @@ impl ExprAll {
             Self::Divide(v) => v.eval(vars),
         }
     }
-    pub fn exprfmtprecedence(&self) -> ExprFmtPrecedence {
-        match self {
-            Self::Const(v) => v.exprfmtprecedence(),
-            Self::Var(v) => v.exprfmtprecedence(),
-            Self::Sum(v) => v.exprfmtprecedence(),
-            Self::Product(v) => v.exprfmtprecedence(),
-            Self::Exponent(v) => v.exprfmtprecedence(),
-            Self::Divide(v) => v.exprfmtprecedence(),
-        }
-    }
     fn get_hash(&self) -> u64 {
         match self {
             Self::Const(v) => v.id().content_hash ^ 0xd674_0330_30c0_0c40, // hardcoded noise to avoid hash collisions
@@ -100,11 +65,5 @@ impl ExprAll {
             // 0x4ac6_cb03_d793_4d05
             // 0x0a00_7007_983d_5738
         }
-    }
-}
-impl Display for ExprAll {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let e = ExprFmt::new(self);
-        write!(f, "{}", e)
     }
 }

@@ -1,70 +1,22 @@
-use syxtensor::expr::{
-    consts::{Const, ExConst},
-    division::ExDivide,
-    exponentiation::ExExponentiate,
-    product::ExProduct,
-    sum::ExSum,
-    var::{ExVar, Var, VarValues},
-    Expr, ExprScope,
+use syxtensor::{
+    expr::{
+        consts::Const,
+        var::{self, VarValues},
+    },
+    util::expr_maker::ExprMaker::{ConstInt, Var},
 };
 
 fn main() {
-    let scope = ExprScope::new();
+    let a = var::Var::new("a");
 
-    let var_a = Var::new("a");
+    let c = (((Var(a) + Var(a) + ConstInt(30)) / (Var(a) - ConstInt(3))).pow(ConstInt(3))
+        - ConstInt(45)
+        + Var(a)
+        + Var(a) * Var(a) * (ConstInt(4) / ConstInt(2)))
+    .build();
 
-    let a = ExConst::new(&scope, Const(3));
-    let b = ExConst::new(&scope, Const(6));
-    let a_ = ExVar::new(&scope, var_a);
+    let vars = VarValues::from([(a, Const(2))]);
 
-    let a_plus_b = ExSum::new(
-        // 223
-        &scope,
-        vec![
-            a.exprall(), // 3
-            ExExponentiate::new(
-                // 216
-                &scope,
-                ExDivide::new(
-                    // 6
-                    &scope,
-                    ExProduct::new(
-                        // 12
-                        &scope,
-                        vec![
-                            b.exprall(),  // 6
-                            a_.exprall(), // 2
-                        ],
-                    )
-                    .exprall(),
-                    a_.exprall(), // 2
-                )
-                .exprall(),
-                a.exprall(), // 3
-            )
-            .exprall(),
-            ExProduct::new(
-                // 4
-                &scope,
-                vec![
-                    a_.exprall(), // 2
-                    a_.exprall(), // 2
-                    ExDivide::new(
-                        // 1
-                        &scope,
-                        ExConst::new(&scope, Const(2)).exprall(), // 2
-                        a_.exprall(),                             // 2
-                    )
-                    .exprall(),
-                ],
-            )
-            .exprall(),
-        ],
-    );
-
-    let mut vars = VarValues::new();
-    vars.set(var_a, Const(2));
-
-    println!("{}", a_plus_b.eval(&vars));
-    println!("{}", a_plus_b.exprall());
+    println!("{}", c);
+    println!("{}", c.eval(&vars));
 }

@@ -1,18 +1,23 @@
 use std::{
-    cell::RefCell,
     collections::hash_map::DefaultHasher,
     fmt::Display,
     hash::{Hash, Hasher},
     rc::Rc,
 };
 
-use super::{var::VarValues, Expr, ExprAll, ExprScope, Id};
+use super::{var::VarValues, Expr, ExprAll, Id};
 
 #[derive(Debug, Clone, Copy, Hash)]
 pub struct Const(pub i32);
 impl Const {
     pub fn pow(self, other: Self) -> Const {
         Const(self.0.pow(other.0 as u32))
+    }
+    pub fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+    pub fn is_one(&self) -> bool {
+        self.0 == 1
     }
 }
 impl std::ops::Add for Const {
@@ -54,6 +59,11 @@ impl std::iter::Product<Const> for Const {
         prod
     }
 }
+impl PartialEq for Const {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
 impl Display for Const {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -63,19 +73,14 @@ impl Display for Const {
 #[derive(Debug)]
 pub struct ExConst(Id, pub Const);
 impl ExConst {
-    pub fn new(scope: &Rc<RefCell<ExprScope>>, c: Const) -> Rc<Self> {
+    pub fn new(c: Const) -> Rc<Self> {
         let content_hash = {
             let mut h = DefaultHasher::new();
             c.hash(&mut h);
             h.finish()
         };
         let id = Id { content_hash };
-        scope
-            .borrow_mut()
-            .consts
-            .entry(id)
-            .or_insert_with(|| Rc::new(Self(id, c)))
-            .clone()
+        Rc::new(Self(id, c))
     }
 }
 impl Expr for ExConst {
@@ -88,9 +93,6 @@ impl Expr for ExConst {
     fn id(&self) -> Id {
         self.0
     }
-    fn exprfmtprecedence(self: &Rc<Self>) -> crate::util::fmt_latex::ExprFmtPrecedence {
-        crate::util::fmt_latex::ExprFmtPrecedence::V // TODO: depends on the const (complex nums are AS)
-    }
 }
 impl PartialEq for ExConst {
     fn eq(&self, other: &Self) -> bool {
@@ -100,19 +102,14 @@ impl PartialEq for ExConst {
 
 #[cfg(test)]
 mod test {
-    use crate::expr::{
-        consts::{Const, ExConst},
-        ExprScope,
-    };
+    use crate::expr::consts::{Const, ExConst};
 
     #[test]
     fn hash_equality() {
-        let scope = ExprScope::new();
-
         let consts = [
-            ExConst::new(&scope, Const(1)),
-            ExConst::new(&scope, Const(1)),
-            ExConst::new(&scope, Const(5)),
+            ExConst::new(Const(1)),
+            ExConst::new(Const(1)),
+            ExConst::new(Const(5)),
         ];
 
         assert_eq!(consts[0], consts[1]);

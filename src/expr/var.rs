@@ -1,11 +1,10 @@
 use std::{
-    cell::RefCell,
     collections::HashMap,
     hash::{Hash, Hasher},
     rc::Rc,
 };
 
-use super::{consts::Const, Expr, ExprAll, ExprScope, Id};
+use super::{consts::Const, Expr, ExprAll, Id};
 
 #[derive(Debug, Clone, Copy, Eq)]
 pub struct Var(&'static str, u64);
@@ -25,28 +24,15 @@ impl Hash for Var {
         state.write_u64(self.1);
     }
 }
-pub struct VarValues(HashMap<Var, Const>);
-impl VarValues {
-    pub fn set(&mut self, var: Var, val: Const) {
-        self.0.insert(var, val);
-    }
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-}
+pub type VarValues = HashMap<Var, Const>;
 
 #[derive(Debug)]
 pub struct ExVar(Id, Var);
 impl ExVar {
-    pub fn new(scope: &Rc<RefCell<ExprScope>>, var: Var) -> Rc<Self> {
+    pub fn new(var: Var) -> Rc<Self> {
         let content_hash = var.1;
         let id = Id { content_hash };
-        scope
-            .borrow_mut()
-            .vars
-            .entry(id)
-            .or_insert_with(|| Rc::new(Self(id, var)))
-            .clone()
+        Rc::new(Self(id, var))
     }
     pub fn var_name(&self) -> &'static str {
         self.1 .0
@@ -54,16 +40,13 @@ impl ExVar {
 }
 impl Expr for ExVar {
     fn eval(&self, vars: &VarValues) -> Const {
-        *vars.0.get(&self.1).expect("eval variable unassigned")
+        *vars.get(&self.1).expect("eval variable unassigned")
     }
     fn exprall(self: &Rc<Self>) -> ExprAll {
         ExprAll::Var(self.clone())
     }
     fn id(&self) -> Id {
         self.0
-    }
-    fn exprfmtprecedence(self: &Rc<Self>) -> crate::util::fmt_latex::ExprFmtPrecedence {
-        crate::util::fmt_latex::ExprFmtPrecedence::V
     }
 }
 impl PartialEq for ExVar {
@@ -74,22 +57,13 @@ impl PartialEq for ExVar {
 
 #[cfg(test)]
 mod test {
-    use crate::expr::{
-        var::{ExVar, Var},
-        ExprScope,
-    };
+    use crate::expr::var::{ExVar, Var};
 
     #[test]
     fn hash_equality() {
-        let scope = ExprScope::new();
-
         let a = Var::new("a");
         let b = Var::new("b");
-        let vars = [
-            ExVar::new(&scope, a),
-            ExVar::new(&scope, a),
-            ExVar::new(&scope, b),
-        ];
+        let vars = [ExVar::new(a), ExVar::new(a), ExVar::new(b)];
 
         assert_eq!(vars[0], vars[1]);
         assert_ne!(vars[0], vars[2]);

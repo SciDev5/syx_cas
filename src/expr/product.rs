@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
     rc::Rc,
@@ -9,26 +8,21 @@ use super::{
     associative_commutative::{ChildrenAssociativeCommutative, ExprAssociativeCommuttative},
     consts::Const,
     var::VarValues,
-    Expr, ExprAll, ExprScope, Id,
+    Expr, ExprAll, Id,
 };
 
 #[derive(Debug)]
 pub struct ExProduct(Id, ChildrenAssociativeCommutative);
 impl ExProduct {
-    pub fn new(scope: &Rc<RefCell<ExprScope>>, children: Vec<ExprAll>) -> Rc<Self> {
-        let children = ChildrenAssociativeCommutative::new::<Self>(scope.clone(), children);
+    pub fn new(children: Vec<ExprAll>) -> Rc<Self> {
+        let children = ChildrenAssociativeCommutative::new::<Self>(children);
         let content_hash = {
             let mut h = DefaultHasher::new();
             children.hash(&mut h);
             h.finish()
         };
         let id = Id { content_hash };
-        scope
-            .borrow_mut()
-            .products
-            .entry(id)
-            .or_insert_with(|| Rc::new(Self(id, children)))
-            .clone()
+        Rc::new(Self(id, children))
     }
 }
 impl Expr for ExProduct {
@@ -44,9 +38,6 @@ impl Expr for ExProduct {
     }
     fn id(&self) -> Id {
         self.0
-    }
-    fn exprfmtprecedence(self: &Rc<Self>) -> crate::util::fmt_latex::ExprFmtPrecedence {
-        crate::util::fmt_latex::ExprFmtPrecedence::MD
     }
 }
 impl ExprAssociativeCommuttative for ExProduct {
@@ -74,56 +65,39 @@ mod test {
     use crate::expr::{
         consts::{Const, ExConst},
         sum::ExSum,
-        ExprAll, ExprScope,
+        ExprAll,
     };
 
     #[test]
     fn hash_equality() {
-        let scope = ExprScope::new();
-
         let consts = [
-            ExConst::new(&scope, Const(1)),
-            ExConst::new(&scope, Const(1)),
-            ExConst::new(&scope, Const(5)),
+            ExConst::new(Const(1)),
+            ExConst::new(Const(1)),
+            ExConst::new(Const(5)),
         ];
 
         let sums = [
-            ExSum::new(
-                &scope,
-                vec![
-                    ExprAll::Const(consts[0].clone()),
-                    ExprAll::Const(consts[0].clone()),
-                ],
-            ),
-            ExSum::new(
-                &scope,
-                vec![
-                    ExprAll::Const(consts[0].clone()),
-                    ExprAll::Const(consts[1].clone()),
-                ],
-            ),
-            ExSum::new(
-                &scope,
-                vec![
-                    ExprAll::Const(consts[2].clone()),
-                    ExprAll::Const(consts[1].clone()),
-                ],
-            ),
-            ExSum::new(
-                &scope,
-                vec![
-                    ExprAll::Const(consts[0].clone()),
-                    ExprAll::Const(consts[2].clone()),
-                ],
-            ),
-            ExSum::new(
-                &scope,
-                vec![
-                    ExprAll::Const(consts[0].clone()),
-                    ExprAll::Const(consts[2].clone()),
-                    ExprAll::Const(consts[2].clone()),
-                ],
-            ),
+            ExSum::new(vec![
+                ExprAll::Const(consts[0].clone()),
+                ExprAll::Const(consts[0].clone()),
+            ]),
+            ExSum::new(vec![
+                ExprAll::Const(consts[0].clone()),
+                ExprAll::Const(consts[1].clone()),
+            ]),
+            ExSum::new(vec![
+                ExprAll::Const(consts[2].clone()),
+                ExprAll::Const(consts[1].clone()),
+            ]),
+            ExSum::new(vec![
+                ExprAll::Const(consts[0].clone()),
+                ExprAll::Const(consts[2].clone()),
+            ]),
+            ExSum::new(vec![
+                ExprAll::Const(consts[0].clone()),
+                ExprAll::Const(consts[2].clone()),
+                ExprAll::Const(consts[2].clone()),
+            ]),
         ];
 
         assert_eq!(sums[0], sums[1]);
