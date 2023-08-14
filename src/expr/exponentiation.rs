@@ -1,6 +1,8 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
-use super::{var::VarValues, Expr, ExprAll, Id};
+use crate::consts::Const;
+
+use super::{consts::ExConst, var::VarValues, Expr, ExprAll, Id};
 
 #[derive(Debug)]
 pub struct ExExponentiate(Id, ExprAll, ExprAll);
@@ -30,6 +32,32 @@ impl Expr for ExExponentiate {
         base.powc(exponent)
     }
     fn exprall(self: &Rc<Self>) -> ExprAll {
+        if let ExprAll::Const(exp) = self.exponent() {
+            if exp.1.is_one() {
+                return self.base().clone();
+            }
+            if let ExprAll::Const(base) = self.base() {
+                if exp.1.is_zero() && !base.1.is_zero() {
+                    return ExConst::new(Const::Int(1)).exprall();
+                }
+            } else {
+                if exp.1.is_zero() {
+                    // x ^ 0 = 1 and x != 0
+                    // TODO enforce x != 0
+                    return ExConst::new(Const::Int(1)).exprall();
+                }
+            }
+        } else if let ExprAll::Const(base) = self.base() {
+            if base.1.is_zero() {
+                // 0 ^ x = 0 and x > 0
+                // TODO enforce x > 0
+                return ExConst::new(Const::Int(0)).exprall();
+            }
+            if base.1.is_one() {
+                // 1 ^ x = 1 (always, even in the limit as $x \to \pm\infty$ because it's a const here)
+                return ExConst::new(Const::Int(1)).exprall();
+            }
+        }
         ExprAll::Exponent(self.clone())
     }
     fn id(&self) -> Id {

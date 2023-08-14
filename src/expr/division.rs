@@ -1,6 +1,6 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
-use super::{var::VarValues, Expr, ExprAll, Id};
+use super::{consts::ExConst, var::VarValues, Expr, ExprAll, Id};
 
 #[derive(Debug)]
 pub struct ExDivide(Id, ExprAll, ExprAll);
@@ -30,7 +30,11 @@ impl Expr for ExDivide {
         numerator / denominator
     }
     fn exprall(self: &Rc<Self>) -> ExprAll {
-        ExprAll::Divide(self.clone())
+        if let (ExprAll::Const(num), ExprAll::Const(den)) = (self.numerator(), self.denominator()) {
+            ExprAll::Const(ExConst::new(num.1 / den.1))
+        } else {
+            ExprAll::Divide(self.clone())
+        }
     }
     fn id(&self) -> Id {
         self.0

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{hash, rc::Rc};
 
 use self::{
     consts::ExConst,
@@ -25,7 +25,7 @@ pub struct Id {
 pub trait Expr {
     fn eval(&self, vars: &VarValues) -> num_complex::Complex64;
     fn id(&self) -> Id;
-    /** Derivation may include simple reductions if possible. */
+    /** Get the trivially simplified (ex. 0*k -> 0 but (a+3)(b+2) remains the same) ExprAll representing this Expr. */
     fn exprall(self: &Rc<Self>) -> ExprAll;
 }
 
@@ -65,5 +65,17 @@ impl ExprAll {
             // 0x4ac6_cb03_d793_4d05
             // 0x0a00_7007_983d_5738
         }
+    }
+}
+// Note that this implementation is checking for "matching" equality, eg, it doesn't consider variable values or advanced identities
+impl PartialEq for ExprAll {
+    fn eq(&self, other: &Self) -> bool {
+        self.get_hash() == other.get_hash()
+    }
+}
+impl Eq for ExprAll {}
+impl hash::Hash for ExprAll {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        state.write_u64(self.get_hash())
     }
 }

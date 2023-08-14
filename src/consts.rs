@@ -337,6 +337,19 @@ impl ops::Mul for Const {
         }
     }
 }
+impl ops::Div for Const {
+    type Output = Const;
+    fn div(self, rhs: Self) -> Self::Output {
+        match self.upgrade_to_match(rhs) {
+            (Self::Int(a), Self::Int(b)) => {
+                Self::Rational(Rational::new(a * b.signum(), b.unsigned_abs()))
+            }
+            (Self::Rational(a), Self::Rational(b)) => Self::Rational(a / b),
+            (Self::RationalComplex(a), Self::RationalComplex(b)) => Self::RationalComplex(a / b),
+            _ => panic!("impossible"),
+        }
+    }
+}
 impl std::iter::Sum<Const> for Const {
     fn sum<I: Iterator<Item = Const>>(iter: I) -> Self {
         let mut sum = Const::Int(0);

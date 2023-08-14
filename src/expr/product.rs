@@ -8,6 +8,9 @@ use crate::consts::Const;
 
 use super::{
     associative_commutative::{ChildrenAssociativeCommutative, ExprAssociativeCommuttative},
+    consts::ExConst,
+    exponentiation::ExExponentiate,
+    sum::ExSum,
     var::VarValues,
     Expr, ExprAll, Id,
 };
@@ -16,7 +19,15 @@ use super::{
 pub struct ExProduct(Id, ChildrenAssociativeCommutative);
 impl ExProduct {
     pub fn new(children: Vec<ExprAll>) -> Rc<Self> {
-        let children = ChildrenAssociativeCommutative::new::<Self>(children);
+        let children = ChildrenAssociativeCommutative::new::<Self>(children)
+            .combine_like::<Self, ExprAll, _, _, _>(
+                |a, b| ExSum::new(vec![a.clone(), b.clone()]).exprall(),
+                |ex| match ex {
+                    ExprAll::Exponent(v) => (v.exponent().clone(), v.base().clone()),
+                    ex => (ExConst::new(Const::Int(1)).exprall(), ex.clone()),
+                },
+                |(k, ex)| ExExponentiate::new(ex, k).exprall(),
+            );
         let content_hash = {
             let mut h = DefaultHasher::new();
             children.hash(&mut h);
@@ -35,7 +46,19 @@ impl Expr for ExProduct {
             .product()
     }
     fn exprall(self: &Rc<Self>) -> ExprAll {
-        ExprAll::Product(self.clone())
+        let children = self.1.get_expralls_filtering(Const::is_one);
+        if self.1.is_only_consts() {
+            // (k) = k
+            ExprAll::Const(self.1.get_consts())
+        } else if self.1.get_consts().1.is_zero() {
+            // k * 0 = 0
+            ExprAll::Const(ExConst::new(Const::Int(0)))
+        } else if children.len() == 1 {
+            // x = x
+            children[0].clone()
+        } else {
+            ExprAll::Product(self.clone())
+        }
     }
     fn id(&self) -> Id {
         self.0
@@ -63,11 +86,10 @@ impl PartialEq for ExProduct {
 
 #[cfg(test)]
 mod test {
-    use crate::{expr::{
-        consts::ExConst,
-        sum::ExSum,
-        ExprAll,
-    }, consts::Const};
+    use crate::{
+        consts::Const,
+        expr::{consts::ExConst, sum::ExSum, ExprAll},
+    };
 
     #[test]
     fn hash_equality() {

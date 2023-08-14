@@ -1,15 +1,12 @@
 use std::{
-    collections::hash_map::DefaultHasher,
+    collections::{hash_map::DefaultHasher, HashMap},
     hash::{Hash, Hasher},
     rc::Rc,
 };
 
 use crate::consts::Const;
 
-use super::{
-    consts::ExConst,
-    Expr, ExprAll,
-};
+use super::{consts::ExConst, Expr, ExprAll};
 
 pub trait ExprAssociativeCommuttative {
     fn reduce_consts<I: Iterator<Item = Const>>(consts: I) -> Const;
@@ -97,6 +94,48 @@ impl ChildrenAssociativeCommutative {
             self.precalculated_hash
         }
     }
+    /// Combine like terms, returning Some if something changed
+    pub fn combine_like<
+        T: ExprAssociativeCommuttative,
+        K: Clone,
+        A: Fn(&K, &K) -> K,
+        F: Fn(&ExprAll) -> (K, ExprAll),
+        R: Fn((K, ExprAll)) -> ExprAll,
+    >(
+        self,
+        add: A,
+        to_term: F,
+        from_term: R,
+    ) -> Self {
+        let terms = self.non_consts.iter().map(to_term).collect::<Vec<_>>();
+        let mut terms_map: HashMap<ExprAll, K> = HashMap::new();
+        let mut combined = false;
+        for (coefficient, expr) in terms {
+            terms_map
+                .entry(expr)
+                .and_modify(|k| {
+                    combined = true;
+                    *k = add(&k, &coefficient);
+                })
+                .or_insert(coefficient);
+        }
+        if !combined {
+            return self;
+        }
+
+        let exprs = terms_map
+            .into_iter()
+            .map(|(ex, coeff)| from_term((coeff, ex)))
+            .chain([self.consts_reduced.exprall()].into_iter())
+            .collect::<Vec<_>>();
+        Self::new::<T>(exprs)
+    }
+    pub fn is_only_consts(&self) -> bool {
+        self.non_consts.len() == 0
+    }
+    pub fn get_consts(&self) -> Rc<ExConst> {
+        self.consts_reduced.clone()
+    }
 }
 impl Hash for ChildrenAssociativeCommutative {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -106,13 +145,16 @@ impl Hash for ChildrenAssociativeCommutative {
 
 #[cfg(test)]
 mod test {
-    use crate::{expr::{
-        associative_commutative::ExprAssociativeCommuttative,
-        consts::ExConst,
-        product::ExProduct,
-        var::{ExVar, Var},
-        Expr,
-    }, consts::Const};
+    use crate::{
+        consts::Const,
+        expr::{
+            associative_commutative::ExprAssociativeCommuttative,
+            consts::ExConst,
+            product::ExProduct,
+            var::{ExVar, Var},
+            Expr,
+        },
+    };
 
     #[test]
     fn precalculated_hashes() {
