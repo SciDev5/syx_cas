@@ -2,7 +2,10 @@
 
 use std::fmt;
 
-use crate::expr::{associative_commutative::ExprAssociativeCommuttative, consts::Const, ExprAll};
+use crate::{
+    consts::Const,
+    expr::{associative_commutative::ExprAssociativeCommuttative, ExprAll},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ExprFmtPrecedence {
@@ -15,7 +18,13 @@ pub enum ExprFmtPrecedence {
 
 pub fn expr_precedence(expr: &ExprAll) -> ExprFmtPrecedence {
     match expr {
-        ExprAll::Const(_) => ExprFmtPrecedence::V, // TODO: depends on the const (complex nums are AS)
+        ExprAll::Const(c) => {
+            if c.1.is_complex() {
+                ExprFmtPrecedence::AS
+            } else {
+                ExprFmtPrecedence::V
+            }
+        }
         ExprAll::Var(_) => ExprFmtPrecedence::V,
         ExprAll::Sum(_) => ExprFmtPrecedence::AS,
         ExprAll::Product(_) => ExprFmtPrecedence::MD,

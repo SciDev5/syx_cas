@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use self::{
-    consts::{Const, ExConst},
+    consts::ExConst,
     division::ExDivide,
     exponentiation::ExExponentiate,
     product::ExProduct,
@@ -23,7 +23,7 @@ pub struct Id {
 }
 
 pub trait Expr {
-    fn eval(&self, vars: &VarValues) -> Const;
+    fn eval(&self, vars: &VarValues) -> num_complex::Complex64;
     fn id(&self) -> Id;
     /** Derivation may include simple reductions if possible. */
     fn exprall(self: &Rc<Self>) -> ExprAll;
@@ -39,7 +39,7 @@ pub enum ExprAll {
     Var(Rc<ExVar>),
 }
 impl ExprAll {
-    pub fn eval(&self, vars: &VarValues) -> Const {
+    pub fn eval(&self, vars: &VarValues) -> num_complex::Complex64 {
         match self {
             Self::Const(v) => v.eval(vars),
             Self::Var(v) => v.eval(vars),

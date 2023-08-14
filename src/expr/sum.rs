@@ -4,9 +4,10 @@ use std::{
     rc::Rc,
 };
 
+use crate::consts::Const;
+
 use super::{
     associative_commutative::{ChildrenAssociativeCommutative, ExprAssociativeCommuttative},
-    consts::Const,
     var::VarValues,
     Expr, ExprAll, Id,
 };
@@ -26,7 +27,7 @@ impl ExSum {
     }
 }
 impl Expr for ExSum {
-    fn eval(&self, vars: &VarValues) -> Const {
+    fn eval(&self, vars: &VarValues) -> num_complex::Complex64 {
         self.1
             .get_expralls()
             .into_iter()
@@ -62,18 +63,18 @@ impl PartialEq for ExSum {
 
 #[cfg(test)]
 mod test {
-    use crate::expr::{
-        consts::{Const, ExConst},
+    use crate::{expr::{
+        consts::ExConst,
         sum::ExSum,
         ExprAll,
-    };
+    }, consts::Const};
 
     #[test]
     fn hash_equality() {
         let consts = [
-            ExConst::new(Const(1)),
-            ExConst::new(Const(1)),
-            ExConst::new(Const(5)),
+            ExConst::new(Const::Int(1)),
+            ExConst::new(Const::Int(1)),
+            ExConst::new(Const::Int(5)),
         ];
 
         let sums = [

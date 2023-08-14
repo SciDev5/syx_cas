@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use super::{consts::Const, Expr, ExprAll, Id};
+use super::{Expr, ExprAll, Id};
 
 #[derive(Debug, Clone, Copy, Eq)]
 pub struct Var(&'static str, u64);
@@ -24,7 +24,7 @@ impl Hash for Var {
         state.write_u64(self.1);
     }
 }
-pub type VarValues = HashMap<Var, Const>;
+pub type VarValues = HashMap<Var, num_complex::Complex64>;
 
 #[derive(Debug)]
 pub struct ExVar(Id, Var);
@@ -39,7 +39,7 @@ impl ExVar {
     }
 }
 impl Expr for ExVar {
-    fn eval(&self, vars: &VarValues) -> Const {
+    fn eval(&self, vars: &VarValues) -> num_complex::Complex64 {
         *vars.get(&self.1).expect("eval variable unassigned")
     }
     fn exprall(self: &Rc<Self>) -> ExprAll {

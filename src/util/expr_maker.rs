@@ -1,19 +1,19 @@
-use crate::expr::{
-    consts::{Const, ExConst},
+use crate::{expr::{
+    consts::ExConst,
     division::ExDivide,
     exponentiation::ExExponentiate,
     product::ExProduct,
     sum::ExSum,
     var::{self, ExVar},
     Expr, ExprAll,
-};
+}, consts::Const};
 
 use ExprMaker::*;
 
 #[derive(Debug, Clone)]
 pub enum ExprMaker {
     Var(var::Var),
-    ConstInt(i32),
+    ConstInt(i128),
     Add(Box<ExprMaker>, Box<ExprMaker>),
     Mul(Box<ExprMaker>, Box<ExprMaker>),
     Div(Box<ExprMaker>, Box<ExprMaker>),
@@ -56,7 +56,7 @@ impl ExprMaker {
             Div(l, r) => ExDivide::new(l.build(), r.build()).exprall(),
             Pow(l, r) => ExExponentiate::new(l.build(), r.build()).exprall(),
             Var(v) => ExVar::new(v).exprall(),
-            ConstInt(v) => ExConst::new(Const(v)).exprall(),
+            ConstInt(v) => ExConst::new(Const::Int(v)).exprall(),
         }
     }
 
@@ -67,13 +67,15 @@ impl ExprMaker {
 
 #[cfg(test)]
 mod test {
+    use num_complex::ComplexFloat;
+
     use crate::{
-        expr::{consts::Const, var},
+        expr::var,
         util::expr_maker::ExprMaker::*,
     };
 
     #[test]
-    fn t() {
+    fn test_expr_maker() {
         let a = var::Var::new("a");
         let b = var::Var::new("b");
         let c = (((Var(a) + Var(b) + ConstInt(30)) / (Var(a) - ConstInt(3))).pow(ConstInt(3))
@@ -83,8 +85,8 @@ mod test {
         .build();
         // ((a + b + 30) / (a - 3)) ^ 3 - 45 + a + a * a * (4/2) = -2239
 
-        let vars = var::VarValues::from([(a, Const(1)), (b, Const(-5))]);
+        let vars = var::VarValues::from([(a, num_complex::Complex64::from(1.0)), (b, num_complex::Complex64::from(-5.0))]);
 
-        assert_eq!(c.eval(&vars), Const(-2239),);
+        assert!((c.eval(&vars) - num_complex::Complex64::new(-2239.0, 0.0)).abs().re() < 1e-10);
     }
 }

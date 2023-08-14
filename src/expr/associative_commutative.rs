@@ -4,8 +4,10 @@ use std::{
     rc::Rc,
 };
 
+use crate::consts::Const;
+
 use super::{
-    consts::{Const, ExConst},
+    consts::ExConst,
     Expr, ExprAll,
 };
 
@@ -104,20 +106,20 @@ impl Hash for ChildrenAssociativeCommutative {
 
 #[cfg(test)]
 mod test {
-    use crate::expr::{
+    use crate::{expr::{
         associative_commutative::ExprAssociativeCommuttative,
-        consts::{Const, ExConst},
+        consts::ExConst,
         product::ExProduct,
         var::{ExVar, Var},
         Expr,
-    };
+    }, consts::Const};
 
     #[test]
     fn precalculated_hashes() {
         let consts = [
-            ExConst::new(Const(0)),
-            ExConst::new(Const(1)),
-            ExConst::new(Const(2)),
+            ExConst::new(Const::Int(0)),
+            ExConst::new(Const::Int(1)),
+            ExConst::new(Const::Int(2)),
         ];
         let vars = [ExVar::new(Var::new("a")), ExVar::new(Var::new("b"))];
 

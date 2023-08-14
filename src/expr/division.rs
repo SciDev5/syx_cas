@@ -1,6 +1,6 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
-use super::{consts::Const, var::VarValues, Expr, ExprAll, Id};
+use super::{var::VarValues, Expr, ExprAll, Id};
 
 #[derive(Debug)]
 pub struct ExDivide(Id, ExprAll, ExprAll);
@@ -23,7 +23,7 @@ impl ExDivide {
     }
 }
 impl Expr for ExDivide {
-    fn eval(&self, vars: &VarValues) -> Const {
+    fn eval(&self, vars: &VarValues) -> num_complex::Complex64 {
         let numerator = self.1.eval(vars);
         let denominator = self.2.eval(vars);
 

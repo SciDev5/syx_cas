@@ -1,8 +1,5 @@
 use syxtensor::{
-    expr::{
-        consts::Const,
-        var::{self, VarValues},
-    },
+    expr::var::{self, VarValues},
     util::expr_maker::ExprMaker::{ConstInt, Var},
 };
 
@@ -15,7 +12,7 @@ fn main() {
         + Var(a) * Var(a) * (ConstInt(4) / ConstInt(2)))
     .build();
 
-    let vars = VarValues::from([(a, Const(2))]);
+    let vars = VarValues::from([(a, num_complex::Complex64::from(2.0))]);
 
     println!("{}", c);
     println!("{}", c.eval(&vars));
