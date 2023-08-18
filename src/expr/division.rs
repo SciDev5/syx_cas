@@ -1,6 +1,11 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
-use super::{consts::ExConst, var::VarValues, Expr, ExprAll, Id};
+use crate::consts::Const;
+
+use super::{
+    consts::ExConst, exponentiation::ExExponentiate, product::ExProduct, sum::ExSum,
+    var::VarValues, Expr, ExprAll, Id,
+};
 
 #[derive(Debug)]
 pub struct ExDivide(Id, ExprAll, ExprAll);
@@ -36,6 +41,27 @@ impl Expr for ExDivide {
             ExprAll::Divide(self.clone())
         }
     }
+    fn derivative(self: &Rc<Self>, var: super::var::Var) -> ExprAll {
+        let u = self.numerator();
+        let v = self.denominator();
+        let u_ = u.derivative(var);
+        let v_ = v.derivative(var);
+        ExDivide::new(
+            // (u / v)' = (u' v - u v') / (v ^ 2)
+            ExSum::new(vec![
+                ExProduct::new(vec![u_.clone(), v.clone()]).exprall(),
+                ExProduct::new(vec![
+                    ExConst::new(Const::Int(-1)).exprall(),
+                    u.clone(),
+                    v_.clone(),
+                ])
+                .exprall(),
+            ])
+            .exprall(),
+            ExExponentiate::new(v.clone(), ExConst::new(Const::Int(2)).exprall()).exprall(),
+        )
+        .exprall()
+    }
     fn id(&self) -> Id {
         self.0
     }
@@ -56,7 +82,10 @@ mod test {
 
     #[test]
     fn hash_equality() {
-        let vars = [ExVar::new(Var::new("a")), ExVar::new(Var::new("b"))];
+        let vars = [
+            ExVar::new(Var::new("a", false)),
+            ExVar::new(Var::new("b", false)),
+        ];
 
         let divs = [
             ExDivide::new(vars[0].exprall(), vars[1].exprall()),

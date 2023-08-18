@@ -1,8 +1,8 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
-use crate::consts::Const;
+use crate::{consts::Const, util::expr_maker::ExprMaker};
 
-use super::{consts::ExConst, var::VarValues, Expr, ExprAll, Id};
+use super::{consts::ExConst, var::{VarValues, Var}, Expr, ExprAll, Id};
 
 #[derive(Debug)]
 pub struct ExExponentiate(Id, ExprAll, ExprAll);
@@ -60,6 +60,34 @@ impl Expr for ExExponentiate {
         }
         ExprAll::Exponent(self.clone())
     }
+    fn derivative(self: &Rc<Self>, var: Var) -> ExprAll {
+        if let ExprAll::Const(_base) = self.base() {
+            if let ExprAll::Const(_exp) = self.exponent() {
+                // {const}^{const}
+                ExConst::new(Const::Int(0)).exprall()
+            } else {
+                // {const}^{f(x)}
+                // (
+                //     Ln(ExprMaker::ConstRaw(base.1)) // Can't
+                //     * ExprMaker::Raw(self.exprall())
+                //     * ExprMaker::Raw(self.exponent().derivative(var))
+                // ).build()
+                todo!("derivative depends on having functions like ln made but like i havent defined those yet");
+            }
+        } else {
+            if let ExprAll::Const(exp) = self.exponent() {
+                // {f(x)}^{const}
+                (
+                    ExprMaker::ConstRaw(exp.1)
+                    * ExprMaker::Raw(self.base().clone()).pow(ExprMaker::ConstRaw(exp.1 + Const::Int(-1)))
+                    * ExprMaker::Raw(self.base().derivative(var))
+                ).build()
+            } else {
+                // TODO d/dx f(x)^g(x)
+                todo!("this derivative is complicated and im too lazy to evaluate it right now (also it depends on having functions like ln made alr)");
+            }
+        }
+    }
     fn id(&self) -> Id {
         self.0
     }
@@ -80,7 +108,10 @@ mod test {
 
     #[test]
     fn hash_equality() {
-        let vars = [ExVar::new(Var::new("a")), ExVar::new(Var::new("b"))];
+        let vars = [
+            ExVar::new(Var::new("a", false)),
+            ExVar::new(Var::new("b", false)),
+        ];
 
         let exps = [
             ExExponentiate::new(vars[0].exprall(), vars[1].exprall()),

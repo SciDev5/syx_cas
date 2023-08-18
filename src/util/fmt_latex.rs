@@ -30,6 +30,7 @@ pub fn expr_precedence(expr: &ExprAll) -> ExprFmtPrecedence {
         ExprAll::Product(_) => ExprFmtPrecedence::MD,
         ExprAll::Exponent(_) => ExprFmtPrecedence::E,
         ExprAll::Divide(_) => ExprFmtPrecedence::MD,
+        ExprAll::Derivative(_) => ExprFmtPrecedence::MD,
     }
 }
 
@@ -62,7 +63,7 @@ fn write_children(
 impl fmt::Display for ExprAll {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ExprAll::Var(v) => write!(f, "{}", v.var_name()),
+            ExprAll::Var(v) => write!(f, "{}", v.var.name()),
             ExprAll::Const(v) => write!(f, "{}", v.1),
             ExprAll::Sum(v) => write_children(
                 f,
@@ -95,6 +96,23 @@ impl fmt::Display for ExprAll {
                 write!(f, " }} ^ {{ ")?;
                 write_child(f, ExprFmtPrecedence::MD, v.exponent(), "")?;
                 write!(f, " }}")?;
+                Ok(())
+            }
+            ExprAll::Derivative(v) => {
+                if let ExprAll::Var(child_var) = &v.expr {
+                    if v.order == 1 {
+                        write!(f, "\\frac{{\\partial {}}}{{\\partial {}}} ", child_var.var.name(), v.var.name())?;
+                    } else {
+                        write!(f, "\\frac{{\\partial ^ {} {}}}{{\\partial {} ^ {}}} ", v.order, child_var.var.name(), v.var.name(), v.order)?;
+                    }
+                } else {
+                    if v.order == 1 {
+                        write!(f, "\\frac{{\\partial}}{{\\partial {}}} ", v.var.name())?;
+                    } else {
+                        write!(f, "\\frac{{\\partial ^ {}}}{{\\partial {} ^ {}}} ", v.order, v.var.name(), v.order)?;
+                    }
+                    write_child(f, ExprFmtPrecedence::MD, &v.expr, "")?;
+                }
                 Ok(())
             }
         }

@@ -6,11 +6,12 @@ use self::{
     exponentiation::ExExponentiate,
     product::ExProduct,
     sum::ExSum,
-    var::{ExVar, VarValues},
+    var::{ExVar, VarValues, Var}, derivative::ExDerivative,
 };
 
 pub mod associative_commutative;
 pub mod consts;
+pub mod derivative;
 pub mod division;
 pub mod exponentiation;
 pub mod product;
@@ -27,6 +28,7 @@ pub trait Expr {
     fn id(&self) -> Id;
     /** Get the trivially simplified (ex. 0*k -> 0 but (a+3)(b+2) remains the same) ExprAll representing this Expr. */
     fn exprall(self: &Rc<Self>) -> ExprAll;
+    fn derivative(self: &Rc<Self>, var: Var) -> ExprAll;
 }
 
 #[derive(Debug, Clone)]
@@ -37,6 +39,7 @@ pub enum ExprAll {
     Exponent(Rc<ExExponentiate>),
     Divide(Rc<ExDivide>),
     Var(Rc<ExVar>),
+    Derivative(Rc<ExDerivative>),
 }
 impl ExprAll {
     pub fn eval(&self, vars: &VarValues) -> num_complex::Complex64 {
@@ -47,6 +50,7 @@ impl ExprAll {
             Self::Product(v) => v.eval(vars),
             Self::Exponent(v) => v.eval(vars),
             Self::Divide(v) => v.eval(vars),
+            Self::Derivative(v) => v.eval(vars),
         }
     }
     fn get_hash(&self) -> u64 {
@@ -57,13 +61,24 @@ impl ExprAll {
             Self::Product(v) => v.id().content_hash ^ 0xadc8_cd4a_57ea_2881,
             Self::Exponent(v) => v.id().content_hash ^ 0x676c_ec63_7c5e_d41a,
             Self::Divide(v) => v.id().content_hash ^ 0xc684_0800_00c5_b600,
-            // 0xb29c_4558_6bbd_b2e6
+            Self::Derivative(v) => v.id().content_hash ^ 0xb29c_4558_6bbd_b2e6,
             // 0x0434_070d_4711_b7be
             // 0x3092_228d_687c_c9ab
             // 0xc3ab_d70d_e223_0489
             // 0x6cb0_36ed_0116_0b13
             // 0x4ac6_cb03_d793_4d05
             // 0x0a00_7007_983d_5738
+        }
+    }
+    pub fn derivative(&self, var: Var) -> ExprAll {
+        match self {
+            Self::Const(v) => v.derivative(var),
+            Self::Var(v) => v.derivative(var),
+            Self::Sum(v) => v.derivative(var),
+            Self::Product(v) => v.derivative(var),
+            Self::Exponent(v) => v.derivative(var),
+            Self::Divide(v) => v.derivative(var),
+            Self::Derivative(v) => v.derivative(var),
         }
     }
 }

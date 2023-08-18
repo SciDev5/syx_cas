@@ -10,7 +10,7 @@ use super::{
     associative_commutative::{ChildrenAssociativeCommutative, ExprAssociativeCommuttative},
     consts::ExConst,
     product::ExProduct,
-    var::VarValues,
+    var::{Var, VarValues},
     Expr, ExprAll, Id,
 };
 
@@ -59,6 +59,17 @@ impl Expr for ExSum {
         } else {
             ExprAll::Sum(self.clone())
         }
+    }
+    fn derivative(self: &Rc<Self>, var: Var) -> ExprAll {
+        // sum rule (a + b + c + {const})' = a' + b' + c'
+        ExSum::new(
+            self.children()
+                .get_nonconsts()
+                .iter()
+                .map(|v| v.derivative(var))
+                .collect(),
+        )
+        .exprall()
     }
     fn id(&self) -> Id {
         self.0

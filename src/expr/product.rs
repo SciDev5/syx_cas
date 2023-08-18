@@ -11,7 +11,7 @@ use super::{
     consts::ExConst,
     exponentiation::ExExponentiate,
     sum::ExSum,
-    var::VarValues,
+    var::{Var, VarValues},
     Expr, ExprAll, Id,
 };
 
@@ -56,9 +56,42 @@ impl Expr for ExProduct {
         } else if children.len() == 1 {
             // x = x
             children[0].clone()
+        } else if self.children().get_nonconsts().len() == 1 {
+            let consts = self.children().get_consts();
+            let child = &self.children().get_nonconsts()[0];
+            if let ExprAll::Sum(sum) = child {
+                // k(a+b) = ka + kb  // constants only
+                ExSum::new(
+                    sum.children()
+                        .get_expralls()
+                        .iter()
+                        .map(|ex| ExProduct::new(vec![consts.exprall(), ex.clone()]).exprall())
+                        .collect(),
+                )
+                .exprall()
+            } else {
+                ExprAll::Product(self.clone())
+            }
         } else {
             ExprAll::Product(self.clone())
         }
+    }
+    fn derivative(self: &Rc<Self>, var: Var) -> ExprAll {
+        // extended product rule ({const} a b c)' = {const}a'bc + {const}ab'c + {const}abc'
+        let consts = self.children().get_consts();
+        let non_consts = self.children().get_nonconsts();
+
+        let mut terms = Vec::with_capacity(non_consts.len());
+        for i in 0..non_consts.len() {
+            let mut v: Vec<_> = [consts.exprall()]
+                .into_iter()
+                .chain(non_consts.iter().map(|v| v.clone()))
+                .collect();
+            v[i + 1] = non_consts[i].derivative(var);
+
+            terms.push(ExProduct::new(v).exprall());
+        }
+        ExSum::new(terms).exprall()
     }
     fn id(&self) -> Id {
         self.0

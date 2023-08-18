@@ -6,7 +6,7 @@ use std::{
 
 use crate::consts::Const;
 
-use super::{var::VarValues, Expr, ExprAll, Id};
+use super::{var::{VarValues, Var}, Expr, ExprAll, Id};
 
 #[derive(Debug)]
 pub struct ExConst(Id, pub Const);
@@ -30,6 +30,9 @@ impl Expr for ExConst {
     }
     fn id(&self) -> Id {
         self.0
+    }
+    fn derivative(self: &Rc<Self>, _var: Var) -> ExprAll {
+        Self::new(Const::Int(0)).exprall()
     }
 }
 impl PartialEq for ExConst {

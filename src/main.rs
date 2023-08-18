@@ -4,7 +4,7 @@ use syxtensor::{
 };
 
 fn main() {
-    let a = var::Var::new("a");
+    let a = var::Var::new("a", false);
 
     let c = (((Var(a) + Var(a) + ConstInt(30)) / (Var(a) - ConstInt(3))).pow(ConstInt(3))
         - ConstInt(45)
@@ -16,6 +16,7 @@ fn main() {
 
     let vars = VarValues::from([(a, num_complex::Complex64::from(2.0))]);
 
-    println!("{}", c);
-    println!("{}", c.eval(&vars));
+    println!("\\frac{{\\partial}}{{\\partial {}}} {}", a.name(), c);
+    println!("= {}", c.derivative(a));
+    println!("= {}", c.derivative(a).eval(&vars));
 }

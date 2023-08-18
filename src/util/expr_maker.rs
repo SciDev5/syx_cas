@@ -5,19 +5,22 @@ use crate::{expr::{
     product::ExProduct,
     sum::ExSum,
     var::{self, ExVar},
-    Expr, ExprAll,
+    Expr, ExprAll, derivative::ExDerivative,
 }, consts::Const};
 
 use ExprMaker::*;
 
 #[derive(Debug, Clone)]
 pub enum ExprMaker {
+    Raw(ExprAll),
     Var(var::Var),
     ConstInt(i128),
+    ConstRaw(Const),
     Add(Box<ExprMaker>, Box<ExprMaker>),
     Mul(Box<ExprMaker>, Box<ExprMaker>),
     Div(Box<ExprMaker>, Box<ExprMaker>),
     Pow(Box<ExprMaker>, Box<ExprMaker>),
+    Derivative(Box<ExprMaker>, var::Var),
 }
 
 impl std::ops::Add for ExprMaker {
@@ -51,17 +54,24 @@ impl std::ops::Div for ExprMaker {
 impl ExprMaker {
     pub fn build(self) -> ExprAll {
         match self {
+            Raw(ex) => ex,
             Add(l, r) => ExSum::new(vec![l.build(), r.build()]).exprall(),
             Mul(l, r) => ExProduct::new(vec![l.build(), r.build()]).exprall(),
             Div(l, r) => ExDivide::new(l.build(), r.build()).exprall(),
             Pow(l, r) => ExExponentiate::new(l.build(), r.build()).exprall(),
+            Derivative(ex, v) => ExDerivative::new(ex.build(), v, 1).exprall(),
             Var(v) => ExVar::new(v).exprall(),
             ConstInt(v) => ExConst::new(Const::Int(v)).exprall(),
+            ConstRaw(c) => ExConst::new(c).exprall(),
         }
     }
 
     pub fn pow(self, other: Self) -> Self {
         Pow(Box::new(self), Box::new(other))
+    }
+
+    pub fn partial_deriv(self, var: var::Var) -> ExprMaker {
+        Derivative(Box::new(self), var)
     }
 }
 
@@ -76,8 +86,8 @@ mod test {
 
     #[test]
     fn test_expr_maker() {
-        let a = var::Var::new("a");
-        let b = var::Var::new("b");
+        let a = var::Var::new("a", false);
+        let b = var::Var::new("b", false);
         let c = (((Var(a) + Var(b) + ConstInt(30)) / (Var(a) - ConstInt(3))).pow(ConstInt(3))
             - ConstInt(45)
             + Var(a)

@@ -136,6 +136,9 @@ impl ChildrenAssociativeCommutative {
     pub fn get_consts(&self) -> Rc<ExConst> {
         self.consts_reduced.clone()
     }
+    pub fn get_nonconsts(&self) -> &Box<[ExprAll]> {
+        &self.non_consts
+    }
 }
 impl Hash for ChildrenAssociativeCommutative {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -163,7 +166,10 @@ mod test {
             ExConst::new(Const::Int(1)),
             ExConst::new(Const::Int(2)),
         ];
-        let vars = [ExVar::new(Var::new("a")), ExVar::new(Var::new("b"))];
+        let vars = [
+            ExVar::new(Var::new("a", false)),
+            ExVar::new(Var::new("b", false)),
+        ];
 
         let products = [
             ExProduct::new(vec![

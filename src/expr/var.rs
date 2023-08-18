@@ -4,49 +4,77 @@ use std::{
     rc::Rc,
 };
 
-use super::{Expr, ExprAll, Id};
+use crate::consts::Const;
+
+use super::{consts::ExConst, derivative::ExDerivative, Expr, ExprAll, Id};
 
 #[derive(Debug, Clone, Copy, Eq)]
-pub struct Var(&'static str, u64);
+pub struct Var {
+    name: &'static str,
+    id: u64,
+    is_dependent: bool,
+}
 impl Var {
-    pub fn new(name: &'static str) -> Self {
-        Var(name, rand::random())
+    pub fn new(name: &'static str, is_dependent: bool) -> Self {
+        Var {
+            name,
+            id: rand::random(),
+            is_dependent,
+        }
+    }
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+    pub fn is_dependent(&self) -> bool {
+        self.is_dependent
+    }
+    pub fn is_independent(&self) -> bool {
+        !self.is_dependent
     }
 }
 impl PartialEq for Var {
     fn eq(&self, other: &Self) -> bool {
-        self.1 == other.1
+        self.id == other.id
     }
 }
 impl Hash for Var {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u64(0xeb42_aa23_948b_300f);
-        state.write_u64(self.1);
+        state.write_u64(self.id);
     }
 }
 pub type VarValues = HashMap<Var, num_complex::Complex64>;
 
 #[derive(Debug)]
-pub struct ExVar(Id, Var);
+pub struct ExVar {
+    id: Id,
+    pub var: Var,
+}
 impl ExVar {
     pub fn new(var: Var) -> Rc<Self> {
-        let content_hash = var.1;
+        let content_hash = var.id;
         let id = Id { content_hash };
-        Rc::new(Self(id, var))
-    }
-    pub fn var_name(&self) -> &'static str {
-        self.1 .0
+        Rc::new(Self { id, var })
     }
 }
 impl Expr for ExVar {
     fn eval(&self, vars: &VarValues) -> num_complex::Complex64 {
-        *vars.get(&self.1).expect("eval variable unassigned")
+        *vars.get(&self.var).expect("eval variable unassigned")
     }
     fn exprall(self: &Rc<Self>) -> ExprAll {
         ExprAll::Var(self.clone())
     }
+    fn derivative(self: &Rc<Self>, var: Var) -> ExprAll {
+        if var == self.var {
+            ExConst::new(Const::Int(1)).exprall()
+        } else if self.var.is_dependent() {
+            ExDerivative::new(self.exprall(), var, 1).exprall()
+        } else {
+            ExConst::new(Const::Int(0)).exprall()
+        }
+    }
     fn id(&self) -> Id {
-        self.0
+        self.id
     }
 }
 impl PartialEq for ExVar {
@@ -61,8 +89,8 @@ mod test {
 
     #[test]
     fn hash_equality() {
-        let a = Var::new("a");
-        let b = Var::new("b");
+        let a = Var::new("a", false);
+        let b = Var::new("b", false);
         let vars = [ExVar::new(a), ExVar::new(a), ExVar::new(b)];
 
         assert_eq!(vars[0], vars[1]);
