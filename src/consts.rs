@@ -11,7 +11,7 @@ impl Rational {
     const ONE: Rational = Rational::new(1, 1);
     const ZERO: Rational = Rational::new(0, 1);
 
-    const fn new(num: i128, den: u128) -> Self {
+    pub const fn new(num: i128, den: u128) -> Self {
         let gcf = gcd(num.unsigned_abs(), den);
         Self {
             num: num / gcf as i128, // safe because the gcd can never be higher than either input
@@ -96,7 +96,7 @@ impl fmt::Display for Rational {
         } else if self.num >= 0 {
             write!(f, "\\frac{{{}}}{{{}}}", self.num, self.den)
         } else {
-            write!(f, "\\frac{{{}}}{{{}}}", self.num.unsigned_abs(), self.den)
+            write!(f, "-\\frac{{{}}}{{{}}}", self.num.unsigned_abs(), self.den)
         }
     }
 }
