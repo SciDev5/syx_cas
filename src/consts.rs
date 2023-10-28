@@ -8,8 +8,8 @@ pub struct Rational {
     den: u128,
 }
 impl Rational {
-    const ONE: Rational = Rational::new(1, 1);
-    const ZERO: Rational = Rational::new(0, 1);
+    pub const ONE: Rational = Rational::new(1, 1);
+    pub const ZERO: Rational = Rational::new(0, 1);
 
     pub const fn new(num: i128, den: u128) -> Self {
         let gcf = gcd(num.unsigned_abs(), den);
@@ -107,6 +107,9 @@ pub struct RationalComplex {
     imag: Rational,
 }
 impl RationalComplex {
+    pub fn new(real: Rational, imag: Rational) -> Self {
+        Self { real, imag }
+    }
     pub fn pow(self, other: Self) -> Option<RationalComplex> {
         if self.is_zero() {
             if other.is_zero() {
@@ -161,7 +164,7 @@ impl ops::Mul for RationalComplex {
     fn mul(self, rhs: Self) -> Self::Output {
         RationalComplex {
             real: self.real * rhs.real - self.imag * rhs.imag,
-            imag: self.real * rhs.imag + self.imag + rhs.real,
+            imag: self.real * rhs.imag + self.imag * rhs.real,
         }
     }
 }
