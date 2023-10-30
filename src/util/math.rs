@@ -1,10 +1,9 @@
-
 /// GCD by euclid's agorithm (const functions are pain)
 pub const fn gcd(a: u128, b: u128) -> u128 {
     if a == 0 || b == 0 {
         return if a > b { a } else { b }; // return max (max is unstable as const fn blah blah
     }
-    let mut x = (a, b); 
+    let mut x = (a, b);
     if x.0 > x.1 {
         x = (x.1, x.0); // (lower, higher)
     }
@@ -57,7 +56,7 @@ mod test {
                     if a == b || b == c || c == a {
                         continue;
                     }
-                    assert_eq!(gcd(a*c, b*c), c);
+                    assert_eq!(gcd(a * c, b * c), c);
                 }
             }
         }

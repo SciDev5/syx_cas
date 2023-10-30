@@ -28,7 +28,9 @@ pub fn expr_precedence(expr: &ExprAll) -> ExprFmtPrecedence {
         ExprAll::Var(_) => ExprFmtPrecedence::V,
         ExprAll::Sum(_) => ExprFmtPrecedence::AS,
         ExprAll::Product(_) => ExprFmtPrecedence::MD,
-        ExprAll::Exponent(_) => ExprFmtPrecedence::E,
+        ExprAll::Pow(_) => ExprFmtPrecedence::E,
+        ExprAll::Exp(_) => ExprFmtPrecedence::E,
+        ExprAll::Ln(_) => ExprFmtPrecedence::P,
         ExprAll::Divide(_) => ExprFmtPrecedence::MD,
         ExprAll::Derivative(_) => ExprFmtPrecedence::MD,
     }
@@ -89,7 +91,7 @@ impl fmt::Display for ExprAll {
                 write!(f, " }}")?;
                 Ok(())
             }
-            ExprAll::Exponent(v) => {
+            ExprAll::Pow(v) => {
                 // For info on overwriting of outer_precedence, see the `ExprAll::Divide` branch.
                 write!(f, "{{ ")?;
                 write_child(f, ExprFmtPrecedence::E, v.base(), "")?;
@@ -98,18 +100,50 @@ impl fmt::Display for ExprAll {
                 write!(f, " }}")?;
                 Ok(())
             }
+            ExprAll::Exp(v) => {
+                // For info on overwriting of outer_precedence, see the `ExprAll::Divide` branch.
+                write!(f, "e ^ {{ ")?;
+                write_child(f, ExprFmtPrecedence::MD, v.exponent(), "")?;
+                write!(f, " }}")?;
+                Ok(())
+            }
+            ExprAll::Ln(v) => {
+                // For info on overwriting of outer_precedence, see the `ExprAll::Divide` branch.
+                write!(f, "\\ln ( ")?;
+                write_child(f, ExprFmtPrecedence::AS, v.argument(), "")?;
+                write!(f, " )")?;
+                Ok(())
+            }
             ExprAll::Derivative(v) => {
                 if let ExprAll::Var(child_var) = &v.expr {
                     if v.order == 1 {
-                        write!(f, "\\frac{{\\partial {}}}{{\\partial {}}} ", child_var.var.name(), v.var.name())?;
+                        write!(
+                            f,
+                            "\\frac{{\\partial {}}}{{\\partial {}}} ",
+                            child_var.var.name(),
+                            v.var.name()
+                        )?;
                     } else {
-                        write!(f, "\\frac{{\\partial ^ {} {}}}{{\\partial {} ^ {}}} ", v.order, child_var.var.name(), v.var.name(), v.order)?;
+                        write!(
+                            f,
+                            "\\frac{{\\partial ^ {} {}}}{{\\partial {} ^ {}}} ",
+                            v.order,
+                            child_var.var.name(),
+                            v.var.name(),
+                            v.order
+                        )?;
                     }
                 } else {
                     if v.order == 1 {
                         write!(f, "\\frac{{\\partial}}{{\\partial {}}} ", v.var.name())?;
                     } else {
-                        write!(f, "\\frac{{\\partial ^ {}}}{{\\partial {} ^ {}}} ", v.order, v.var.name(), v.order)?;
+                        write!(
+                            f,
+                            "\\frac{{\\partial ^ {}}}{{\\partial {} ^ {}}} ",
+                            v.order,
+                            v.var.name(),
+                            v.order
+                        )?;
                     }
                     write_child(f, ExprFmtPrecedence::MD, &v.expr, "")?;
                 }

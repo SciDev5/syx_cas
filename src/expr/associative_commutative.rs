@@ -149,7 +149,7 @@ impl Hash for ChildrenAssociativeCommutative {
 #[cfg(test)]
 mod test {
     use crate::{
-        consts::Const,
+        consts::{ZERO, ONE, HALF},
         expr::{
             associative_commutative::ExprAssociativeCommuttative,
             consts::ExConst,
@@ -162,9 +162,9 @@ mod test {
     #[test]
     fn precalculated_hashes() {
         let consts = [
-            ExConst::new(Const::Int(0)),
-            ExConst::new(Const::Int(1)),
-            ExConst::new(Const::Int(2)),
+            ExConst::new(ZERO),
+            ExConst::new(ONE),
+            ExConst::new(HALF),
         ];
         let vars = [
             ExVar::new(Var::new("a", false)),

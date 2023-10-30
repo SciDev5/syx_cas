@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::consts::Const;
+use crate::consts::{ONE, ZERO};
 
 use super::{consts::ExConst, derivative::ExDerivative, Expr, ExprAll, Id};
 
@@ -66,11 +66,11 @@ impl Expr for ExVar {
     }
     fn derivative(self: &Rc<Self>, var: Var) -> ExprAll {
         if var == self.var {
-            ExConst::new(Const::Int(1)).exprall()
+            ExConst::new(ONE).exprall()
         } else if self.var.is_dependent() {
             ExDerivative::new(self.exprall(), var, 1).exprall()
         } else {
-            ExConst::new(Const::Int(0)).exprall()
+            ExConst::new(ZERO).exprall()
         }
     }
     fn id(&self) -> Id {

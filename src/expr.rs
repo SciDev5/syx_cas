@@ -2,18 +2,23 @@ use std::{hash, rc::Rc};
 
 use self::{
     consts::ExConst,
+    derivative::ExDerivative,
     division::ExDivide,
-    exponentiation::ExExponentiate,
+    exp::ExExp,
+    ln::ExLn,
+    pow::ExPow,
     product::ExProduct,
     sum::ExSum,
-    var::{ExVar, VarValues, Var}, derivative::ExDerivative,
+    var::{ExVar, Var, VarValues},
 };
 
 pub mod associative_commutative;
 pub mod consts;
 pub mod derivative;
 pub mod division;
-pub mod exponentiation;
+pub mod exp;
+pub mod ln;
+pub mod pow;
 pub mod product;
 pub mod sum;
 pub mod var;
@@ -36,7 +41,9 @@ pub enum ExprAll {
     Const(Rc<ExConst>),
     Sum(Rc<ExSum>),
     Product(Rc<ExProduct>),
-    Exponent(Rc<ExExponentiate>),
+    Pow(Rc<ExPow>),
+    Exp(Rc<ExExp>),
+    Ln(Rc<ExLn>),
     Divide(Rc<ExDivide>),
     Var(Rc<ExVar>),
     Derivative(Rc<ExDerivative>),
@@ -48,7 +55,9 @@ impl ExprAll {
             Self::Var(v) => v.eval(vars),
             Self::Sum(v) => v.eval(vars),
             Self::Product(v) => v.eval(vars),
-            Self::Exponent(v) => v.eval(vars),
+            Self::Pow(v) => v.eval(vars),
+            Self::Exp(v) => v.eval(vars),
+            Self::Ln(v) => v.eval(vars),
             Self::Divide(v) => v.eval(vars),
             Self::Derivative(v) => v.eval(vars),
         }
@@ -59,11 +68,11 @@ impl ExprAll {
             Self::Var(v) => v.id().content_hash ^ 0x36a7_4d41_2258_3d0e,
             Self::Sum(v) => v.id().content_hash ^ 0x0992_3158_b088_c199,
             Self::Product(v) => v.id().content_hash ^ 0xadc8_cd4a_57ea_2881,
-            Self::Exponent(v) => v.id().content_hash ^ 0x676c_ec63_7c5e_d41a,
+            Self::Pow(v) => v.id().content_hash ^ 0x676c_ec63_7c5e_d41a,
+            Self::Exp(v) => v.id().content_hash ^ 0x0434_070d_4711_b7be,
+            Self::Ln(v) => v.id().content_hash ^ 0x3092_228d_687c_c9ab,
             Self::Divide(v) => v.id().content_hash ^ 0xc684_0800_00c5_b600,
             Self::Derivative(v) => v.id().content_hash ^ 0xb29c_4558_6bbd_b2e6,
-            // 0x0434_070d_4711_b7be
-            // 0x3092_228d_687c_c9ab
             // 0xc3ab_d70d_e223_0489
             // 0x6cb0_36ed_0116_0b13
             // 0x4ac6_cb03_d793_4d05
@@ -76,7 +85,9 @@ impl ExprAll {
             Self::Var(v) => v.derivative(var),
             Self::Sum(v) => v.derivative(var),
             Self::Product(v) => v.derivative(var),
-            Self::Exponent(v) => v.derivative(var),
+            Self::Pow(v) => v.derivative(var),
+            Self::Exp(v) => v.derivative(var),
+            Self::Ln(v) => v.derivative(var),
             Self::Divide(v) => v.derivative(var),
             Self::Derivative(v) => v.derivative(var),
         }

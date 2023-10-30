@@ -217,6 +217,16 @@ impl fmt::Display for RationalComplex {
     }
 }
 
+pub const ONE: Const = Const::Int(1);
+pub const ZERO: Const = Const::Int(0);
+pub const NEG_ONE: Const = Const::Int(-1);
+pub const HALF: Const = Const::Rational(Rational::new(1, 2));
+pub const TWO: Const = Const::Int(2);
+pub const I: Const = Const::RationalComplex(RationalComplex {
+    real: Rational::ZERO,
+    imag: Rational::ONE,
+});
+
 #[derive(Debug, Clone, Copy)]
 pub enum Const {
     Int(i128),
@@ -355,7 +365,7 @@ impl ops::Div for Const {
 }
 impl std::iter::Sum<Const> for Const {
     fn sum<I: Iterator<Item = Const>>(iter: I) -> Self {
-        let mut sum = Const::Int(0);
+        let mut sum = ZERO;
         for ent in iter {
             sum = sum + ent;
         }
@@ -364,7 +374,7 @@ impl std::iter::Sum<Const> for Const {
 }
 impl std::iter::Product<Const> for Const {
     fn product<I: Iterator<Item = Const>>(iter: I) -> Self {
-        let mut prod = Const::Int(1);
+        let mut prod = ONE;
         for ent in iter {
             prod = prod * ent;
         }

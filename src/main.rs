@@ -1,5 +1,5 @@
 use syx::{
-    consts::{Const, Rational, RationalComplex},
+    consts::{I, ONE},
     expr::var,
     util::expr_maker::ExprMaker::{ConstInt, ConstRaw, Var},
 };
@@ -8,15 +8,14 @@ fn main() {
     let x = var::Var::new("x", false);
 
     // y = x^(1+1i) + x / (x - 3)
-    let y = (Var(x).pow(ConstRaw(Const::RationalComplex(RationalComplex::new(
-        Rational::ONE,
-        Rational::ONE,
-    )))) + Var(x) / (Var(x) - ConstInt(3)))
+    let y = (Var(x).pow(ConstRaw(ONE + I))
+        + Var(x) / (Var(x) - ConstInt(3))
+        + ((Var(x) * Var(x).ln()).exp()))
     .build();
 
     let dy_dx = y.derivative(x);
 
-    println!("\n\ny = {}\n\\\\\ndy/dx = {}\n\n", y, dy_dx);
+    println!("\n\ny = {}\n\\\\\ny^\\prime = {}\n\n", y, dy_dx);
 }
 
 // fn main() {

@@ -1,10 +1,9 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
-use crate::consts::Const;
+use crate::consts::{NEG_ONE, TWO};
 
 use super::{
-    consts::ExConst, exponentiation::ExExponentiate, product::ExProduct, sum::ExSum,
-    var::VarValues, Expr, ExprAll, Id,
+    consts::ExConst, pow::ExPow, product::ExProduct, sum::ExSum, var::VarValues, Expr, ExprAll, Id,
 };
 
 #[derive(Debug)]
@@ -50,15 +49,11 @@ impl Expr for ExDivide {
             // (u / v)' = (u' v - u v') / (v ^ 2)
             ExSum::new(vec![
                 ExProduct::new(vec![u_.clone(), v.clone()]).exprall(),
-                ExProduct::new(vec![
-                    ExConst::new(Const::Int(-1)).exprall(),
-                    u.clone(),
-                    v_.clone(),
-                ])
-                .exprall(),
+                ExProduct::new(vec![ExConst::new(NEG_ONE).exprall(), u.clone(), v_.clone()])
+                    .exprall(),
             ])
             .exprall(),
-            ExExponentiate::new(v.clone(), ExConst::new(Const::Int(2)).exprall()).exprall(),
+            ExPow::new(v.clone(), ExConst::new(TWO).exprall()).exprall(),
         )
         .exprall()
     }

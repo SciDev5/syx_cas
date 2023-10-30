@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::consts::Const;
+use crate::consts::{Const, ONE};
 
 use super::{
     associative_commutative::{ChildrenAssociativeCommutative, ExprAssociativeCommuttative},
@@ -17,6 +17,7 @@ use super::{
 #[derive(Debug)]
 pub struct ExSum(Id, ChildrenAssociativeCommutative);
 impl ExSum {
+    // TODO: explain this code I have no idea what this does
     pub fn new(children: Vec<ExprAll>) -> Rc<Self> {
         let children = ChildrenAssociativeCommutative::new::<Self>(children)
             .combine_like::<Self, Const, _, _, _>(
@@ -26,7 +27,7 @@ impl ExSum {
                         v.children().get_consts().1,
                         ExProduct::new(v.children().get_expralls_filtering(|_| true)).exprall(),
                     ),
-                    ex => (Const::Int(1), ex.clone()),
+                    ex => (ONE, ex.clone()),
                 },
                 |(k, ex)| ExProduct::new(vec![ExConst::new(k).exprall(), ex]).exprall(),
             );
@@ -98,15 +99,15 @@ impl PartialEq for ExSum {
 #[cfg(test)]
 mod test {
     use crate::{
-        consts::Const,
+        consts::{Const, ONE},
         expr::{consts::ExConst, sum::ExSum, ExprAll},
     };
 
     #[test]
     fn hash_equality() {
         let consts = [
-            ExConst::new(Const::Int(1)),
-            ExConst::new(Const::Int(1)),
+            ExConst::new(ONE),
+            ExConst::new(ONE),
             ExConst::new(Const::Int(5)),
         ];
 

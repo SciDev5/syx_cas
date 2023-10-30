@@ -1,12 +1,18 @@
-use crate::{expr::{
-    consts::ExConst,
-    division::ExDivide,
-    exponentiation::ExExponentiate,
-    product::ExProduct,
-    sum::ExSum,
-    var::{self, ExVar},
-    Expr, ExprAll, derivative::ExDerivative,
-}, consts::Const};
+use crate::{
+    consts::Const,
+    expr::{
+        consts::ExConst,
+        derivative::ExDerivative,
+        division::ExDivide,
+        exp::ExExp,
+        ln::ExLn,
+        pow::ExPow,
+        product::ExProduct,
+        sum::ExSum,
+        var::{self, ExVar},
+        Expr, ExprAll,
+    },
+};
 
 use ExprMaker::*;
 
@@ -20,6 +26,8 @@ pub enum ExprMaker {
     Mul(Box<ExprMaker>, Box<ExprMaker>),
     Div(Box<ExprMaker>, Box<ExprMaker>),
     Pow(Box<ExprMaker>, Box<ExprMaker>),
+    Exp(Box<ExprMaker>),
+    Ln(Box<ExprMaker>),
     Derivative(Box<ExprMaker>, var::Var),
 }
 
@@ -58,7 +66,9 @@ impl ExprMaker {
             Add(l, r) => ExSum::new(vec![l.build(), r.build()]).exprall(),
             Mul(l, r) => ExProduct::new(vec![l.build(), r.build()]).exprall(),
             Div(l, r) => ExDivide::new(l.build(), r.build()).exprall(),
-            Pow(l, r) => ExExponentiate::new(l.build(), r.build()).exprall(),
+            Pow(l, r) => ExPow::new(l.build(), r.build()).exprall(),
+            Exp(v) => ExExp::new(v.build()).exprall(),
+            Ln(v) => ExLn::new(v.build()).exprall(),
             Derivative(ex, v) => ExDerivative::new(ex.build(), v, 1).exprall(),
             Var(v) => ExVar::new(v).exprall(),
             ConstInt(v) => ExConst::new(Const::Int(v)).exprall(),
@@ -68,6 +78,12 @@ impl ExprMaker {
 
     pub fn pow(self, other: Self) -> Self {
         Pow(Box::new(self), Box::new(other))
+    }
+    pub fn exp(self) -> Self {
+        Exp(Box::new(self))
+    }
+    pub fn ln(self) -> Self {
+        Ln(Box::new(self))
     }
 
     pub fn partial_deriv(self, var: var::Var) -> ExprMaker {
@@ -79,10 +95,7 @@ impl ExprMaker {
 mod test {
     use num_complex::ComplexFloat;
 
-    use crate::{
-        expr::var,
-        util::expr_maker::ExprMaker::*,
-    };
+    use crate::{expr::var, util::expr_maker::ExprMaker::*};
 
     #[test]
     fn test_expr_maker() {
@@ -95,8 +108,16 @@ mod test {
         .build();
         // ((a + b + 30) / (a - 3)) ^ 3 - 45 + a + a * a * (4/2) = -2239
 
-        let vars = var::VarValues::from([(a, num_complex::Complex64::from(1.0)), (b, num_complex::Complex64::from(-5.0))]);
+        let vars = var::VarValues::from([
+            (a, num_complex::Complex64::from(1.0)),
+            (b, num_complex::Complex64::from(-5.0)),
+        ]);
 
-        assert!((c.eval(&vars) - num_complex::Complex64::new(-2239.0, 0.0)).abs().re() < 1e-10);
+        assert!(
+            (c.eval(&vars) - num_complex::Complex64::new(-2239.0, 0.0))
+                .abs()
+                .re()
+                < 1e-10
+        );
     }
 }

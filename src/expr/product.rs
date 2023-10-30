@@ -4,12 +4,12 @@ use std::{
     rc::Rc,
 };
 
-use crate::consts::Const;
+use crate::consts::{Const, ONE, ZERO};
 
 use super::{
     associative_commutative::{ChildrenAssociativeCommutative, ExprAssociativeCommuttative},
     consts::ExConst,
-    exponentiation::ExExponentiate,
+    pow::ExPow,
     sum::ExSum,
     var::{Var, VarValues},
     Expr, ExprAll, Id,
@@ -19,14 +19,15 @@ use super::{
 pub struct ExProduct(Id, ChildrenAssociativeCommutative);
 impl ExProduct {
     pub fn new(children: Vec<ExprAll>) -> Rc<Self> {
+        // TODO: explain this code I have no idea what this does
         let children = ChildrenAssociativeCommutative::new::<Self>(children)
             .combine_like::<Self, ExprAll, _, _, _>(
                 |a, b| ExSum::new(vec![a.clone(), b.clone()]).exprall(),
                 |ex| match ex {
-                    ExprAll::Exponent(v) => (v.exponent().clone(), v.base().clone()),
-                    ex => (ExConst::new(Const::Int(1)).exprall(), ex.clone()),
+                    ExprAll::Pow(v) => (v.exponent().clone(), v.base().clone()),
+                    ex => (ExConst::new(ONE).exprall(), ex.clone()),
                 },
-                |(k, ex)| ExExponentiate::new(ex, k).exprall(),
+                |(k, ex)| ExPow::new(ex, k).exprall(),
             );
         let content_hash = {
             let mut h = DefaultHasher::new();
@@ -52,7 +53,7 @@ impl Expr for ExProduct {
             ExprAll::Const(self.1.get_consts())
         } else if self.1.get_consts().1.is_zero() {
             // k * 0 = 0
-            ExprAll::Const(ExConst::new(Const::Int(0)))
+            ExprAll::Const(ExConst::new(ZERO))
         } else if children.len() == 1 {
             // x = x
             children[0].clone()
@@ -120,15 +121,15 @@ impl PartialEq for ExProduct {
 #[cfg(test)]
 mod test {
     use crate::{
-        consts::Const,
+        consts::{Const, ONE},
         expr::{consts::ExConst, sum::ExSum, ExprAll},
     };
 
     #[test]
     fn hash_equality() {
         let consts = [
-            ExConst::new(Const::Int(1)),
-            ExConst::new(Const::Int(1)),
+            ExConst::new(ONE),
+            ExConst::new(ONE),
             ExConst::new(Const::Int(5)),
         ];
 

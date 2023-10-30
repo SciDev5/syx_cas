@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::consts::Const;
+use crate::consts::{ONE, ZERO};
 
 use super::{
     consts::ExConst,
@@ -53,17 +53,17 @@ impl Expr for ExDerivative {
     fn exprall(self: &Rc<Self>) -> ExprAll {
         if let ExprAll::Const(_) = &self.expr {
             // `d/dx C = 0` for const `C`
-            return ExConst::new(Const::Int(0)).exprall();
+            return ExConst::new(ZERO).exprall();
         }
         if let ExprAll::Var(v) = &self.expr {
             if v.var.is_independent() && v.var != self.var {
                 // different independent variable
                 // `dx/dy = 0` if `x` and `y` are both independent
-                return ExConst::new(Const::Int(0)).exprall();
+                return ExConst::new(ZERO).exprall();
             }
             if v.var == self.var {
                 // `dx/dx = 1` obviously lmao
-                return ExConst::new(Const::Int(1)).exprall();
+                return ExConst::new(ONE).exprall();
             }
         }
         ExprAll::Derivative(self.clone())

@@ -4,9 +4,12 @@ use std::{
     rc::Rc,
 };
 
-use crate::consts::Const;
+use crate::consts::{Const, ZERO};
 
-use super::{var::{VarValues, Var}, Expr, ExprAll, Id};
+use super::{
+    var::{Var, VarValues},
+    Expr, ExprAll, Id,
+};
 
 #[derive(Debug)]
 pub struct ExConst(Id, pub Const);
@@ -32,7 +35,7 @@ impl Expr for ExConst {
         self.0
     }
     fn derivative(self: &Rc<Self>, _var: Var) -> ExprAll {
-        Self::new(Const::Int(0)).exprall()
+        Self::new(ZERO).exprall()
     }
 }
 impl PartialEq for ExConst {
@@ -43,13 +46,16 @@ impl PartialEq for ExConst {
 
 #[cfg(test)]
 mod test {
-    use crate::expr::consts::{Const, ExConst};
+    use crate::{
+        consts::ONE,
+        expr::consts::{Const, ExConst},
+    };
 
     #[test]
     fn hash_equality() {
         let consts = [
-            ExConst::new(Const::Int(1)),
-            ExConst::new(Const::Int(1)),
+            ExConst::new(ONE),
+            ExConst::new(ONE),
             ExConst::new(Const::Int(5)),
         ];
 
