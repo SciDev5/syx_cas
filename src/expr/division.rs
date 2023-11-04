@@ -1,9 +1,9 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
-use crate::consts::{NEG_ONE, TWO};
+use crate::consts::{NEG_ONE, TWO, ONE, ZERO};
 
 use super::{
-    consts::ExConst, pow::ExPow, product::ExProduct, sum::ExSum, var::VarValues, Expr, ExprAll, Id,
+    consts::ExConst, pow::ExPow, product::ExProduct, sum::ExSum, var::{VarValues, Var}, Expr, ExprAll, Id,
 };
 
 #[derive(Debug)]
@@ -35,10 +35,19 @@ impl Expr for ExDivide {
     }
     fn exprall(self: &Rc<Self>) -> ExprAll {
         if let (ExprAll::Const(num), ExprAll::Const(den)) = (self.numerator(), self.denominator()) {
-            ExprAll::Const(ExConst::new(num.1 / den.1))
-        } else {
-            ExprAll::Divide(self.clone())
+            return ExprAll::Const(ExConst::new(num.1 / den.1));
+        } else if self.numerator() == self.denominator() {
+            return ExprAll::Const(ExConst::new(ONE));
+        } else if let ExprAll::Const(den) = self.denominator() {
+            if den.1.is_one() {
+                return self.numerator().clone();
+            }
+        } else if let ExprAll::Const(num) = self.numerator() {
+            if num.1.is_zero() {
+                return ExprAll::Const(ExConst::new(ZERO));
+            }
         }
+        ExprAll::Divide(self.clone())
     }
     fn derivative(self: &Rc<Self>, var: super::var::Var) -> ExprAll {
         let u = self.numerator();
@@ -54,6 +63,17 @@ impl Expr for ExDivide {
             ])
             .exprall(),
             ExPow::new(v.clone(), ExConst::new(TWO).exprall()).exprall(),
+        )
+        .exprall()
+    }
+    fn has_explicit_dependence(self: &Rc<Self>, var: super::var::Var) -> bool {
+        self.numerator().has_explicit_dependence(var)
+            || self.denominator().has_explicit_dependence(var)
+    }
+    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
+        ExDivide::new(
+            self.numerator().substitute(var, expr.clone()),
+            self.denominator().substitute(var, expr),
         )
         .exprall()
     }

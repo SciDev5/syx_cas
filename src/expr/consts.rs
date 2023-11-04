@@ -31,11 +31,17 @@ impl Expr for ExConst {
     fn exprall(self: &Rc<Self>) -> ExprAll {
         ExprAll::Const(self.clone())
     }
-    fn id(&self) -> Id {
-        self.0
-    }
     fn derivative(self: &Rc<Self>, _var: Var) -> ExprAll {
         Self::new(ZERO).exprall()
+    }
+    fn has_explicit_dependence(self: &Rc<Self>, _var: Var) -> bool {
+        false
+    }
+    fn substitute(self: &Rc<Self>, _var: Var, _expr: ExprAll) -> ExprAll {
+        self.exprall()
+    }
+    fn id(&self) -> Id {
+        self.0
     }
 }
 impl PartialEq for ExConst {

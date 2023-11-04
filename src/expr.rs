@@ -1,5 +1,6 @@
 use std::{hash, rc::Rc};
 
+
 use self::{
     consts::ExConst,
     derivative::ExDerivative,
@@ -34,6 +35,9 @@ pub trait Expr {
     /** Get the trivially simplified (ex. 0*k -> 0 but (a+3)(b+2) remains the same) ExprAll representing this Expr. */
     fn exprall(self: &Rc<Self>) -> ExprAll;
     fn derivative(self: &Rc<Self>, var: Var) -> ExprAll;
+    /** Returns true if this expression is written in terms of `var`. NOTE: May return true even if `var` will cancel out (ex: $x-x$ -> true). */
+    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool;
+    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll;
 }
 
 #[derive(Debug, Clone)]
@@ -90,6 +94,32 @@ impl ExprAll {
             Self::Ln(v) => v.derivative(var),
             Self::Divide(v) => v.derivative(var),
             Self::Derivative(v) => v.derivative(var),
+        }
+    }
+    pub fn has_explicit_dependence(&self, var: Var) -> bool {
+        match self {
+            Self::Const(v) => v.has_explicit_dependence(var),
+            Self::Var(v) => v.has_explicit_dependence(var),
+            Self::Sum(v) => v.has_explicit_dependence(var),
+            Self::Product(v) => v.has_explicit_dependence(var),
+            Self::Pow(v) => v.has_explicit_dependence(var),
+            Self::Exp(v) => v.has_explicit_dependence(var),
+            Self::Ln(v) => v.has_explicit_dependence(var),
+            Self::Divide(v) => v.has_explicit_dependence(var),
+            Self::Derivative(v) => v.has_explicit_dependence(var),
+        }
+    }
+    pub fn substitute(&self, var: Var, expr: ExprAll) -> ExprAll {
+        match self {
+            Self::Const(v) => v.substitute(var, expr),
+            Self::Var(v) => v.substitute(var, expr),
+            Self::Sum(v) => v.substitute(var, expr),
+            Self::Product(v) => v.substitute(var, expr),
+            Self::Pow(v) => v.substitute(var, expr),
+            Self::Exp(v) => v.substitute(var, expr),
+            Self::Ln(v) => v.substitute(var, expr),
+            Self::Divide(v) => v.substitute(var, expr),
+            Self::Derivative(v) => v.substitute(var, expr),
         }
     }
 }

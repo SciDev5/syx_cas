@@ -48,6 +48,12 @@ impl Expr for ExLn {
         )
         .exprall()
     }
+    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
+        self.argument().has_explicit_dependence(var)
+    }
+    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
+        ExLn::new(self.argument().substitute(var, expr)).exprall()
+    }
     fn id(&self) -> Id {
         self.0
     }

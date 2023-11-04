@@ -1,5 +1,5 @@
 use crate::{
-    consts::Const,
+    consts::{Const, HALF},
     expr::{
         consts::ExConst,
         derivative::ExDerivative,
@@ -45,6 +45,13 @@ impl std::ops::Sub for ExprMaker {
     }
 }
 
+impl std::ops::Neg for ExprMaker {
+    type Output = ExprMaker;
+    fn neg(self) -> Self::Output {
+        self * ConstInt(-1)
+    }
+}
+
 impl std::ops::Mul for ExprMaker {
     type Output = ExprMaker;
     fn mul(self, rhs: Self) -> Self::Output {
@@ -78,6 +85,12 @@ impl ExprMaker {
 
     pub fn pow(self, other: Self) -> Self {
         Pow(Box::new(self), Box::new(other))
+    }
+    pub fn squared(self) -> Self {
+        Pow(Box::new(self), Box::new(ExprMaker::ConstInt(2)))
+    }
+    pub fn sqrt(self) -> Self {
+        Pow(Box::new(self), Box::new(ExprMaker::ConstRaw(HALF)))
     }
     pub fn exp(self) -> Self {
         Exp(Box::new(self))

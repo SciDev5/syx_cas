@@ -47,6 +47,12 @@ impl Expr for ExExp {
     fn derivative(self: &Rc<Self>, var: Var) -> ExprAll {
         ExProduct::new(vec![self.exprall(), self.exponent().derivative(var)]).exprall()
     }
+    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
+        self.exponent().has_explicit_dependence(var)
+    }
+    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
+        ExExp::new(self.exponent().substitute(var, expr)).exprall()
+    }
     fn id(&self) -> Id {
         self.0
     }

@@ -94,6 +94,22 @@ impl Expr for ExProduct {
         }
         ExSum::new(terms).exprall()
     }
+    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
+        self.children()
+            .get_nonconsts()
+            .iter()
+            .any(|it| it.has_explicit_dependence(var))
+    }
+    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
+        ExProduct::new(
+            self.children()
+                .get_expralls()
+                .iter()
+                .map(|it| it.substitute(var, expr.clone()))
+                .collect(),
+        )
+        .exprall()
+    }
     fn id(&self) -> Id {
         self.0
     }

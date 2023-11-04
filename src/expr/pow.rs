@@ -1,7 +1,7 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
 use crate::{
-    consts::{NEG_ONE, ONE, ZERO},
+    consts::{Const, NEG_ONE, ONE, ZERO},
     util::expr_maker::ExprMaker,
 };
 
@@ -44,8 +44,19 @@ impl Expr for ExPow {
                 return self.base().clone();
             }
             if let ExprAll::Const(base) = self.base() {
-                if exp.1.is_zero() && !base.1.is_zero() {
+                if !base.1.is_zero() && exp.1.is_zero() {
                     return ExConst::new(ONE).exprall();
+                }
+                if base.1.is_one() {
+                    return ExConst::new(ONE).exprall();
+                }
+                if base.1.is_zero() && !exp.1.is_zero() {
+                    return ExConst::new(ZERO).exprall();
+                }
+                if let (Const::Int(base), Const::Int(exp)) = (base.1, exp.1) {
+                    if exp >= 0 && exp < std::u32::MAX as i128 {
+                        return ExConst::new(Const::Int(base.pow(exp as u32))).exprall();
+                    }
                 }
             } else {
                 if exp.1.is_zero() {
@@ -93,6 +104,16 @@ impl Expr for ExPow {
                 todo!("this derivative is complicated and im too lazy to evaluate it right now (also it depends on having functions like ln made alr)");
             }
         }
+    }
+    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
+        self.base().has_explicit_dependence(var) || self.exponent().has_explicit_dependence(var)
+    }
+    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
+        ExPow::new(
+            self.base().substitute(var, expr.clone()),
+            self.exponent().substitute(var, expr),
+        )
+        .exprall()
     }
     fn id(&self) -> Id {
         self.0

@@ -1,6 +1,7 @@
 use syx::{
     consts::{I, ONE},
     expr::var,
+    solve::equality::Equality,
     util::expr_maker::ExprMaker::{ConstInt, ConstRaw, Var},
 };
 
@@ -16,6 +17,33 @@ fn main() {
     let dy_dx = y.derivative(x);
 
     println!("\n\ny = {}\n\\\\\ny^\\prime = {}\n\n", y, dy_dx);
+
+    let y = var::Var::new("y", false);
+
+    let x_ = Var(x);
+    let y_ = Var(y);
+
+    let c0 = (x_.clone().squared() + x_.clone() + y_.clone().exp() * ConstInt(5)).build();
+    let c1 = (-x_.clone() + ConstInt(20)).build();
+
+    let eq: Equality = Equality::new(c0.clone(), c1.clone());
+    println!("{} = {}", c0, c1);
+    let x_k = eq.solve_for(x).unwrap();
+    let y_k = eq.solve_for(y).unwrap();
+    println!(
+        "x = \\left[ {} \\right]\n\\\\\ny = \\left[ {} \\right]",
+        x_k.iter()
+            .map(|v| format!("{}", v))
+            .collect::<Vec<_>>()
+            .join(", "),
+        y_k.iter()
+            .map(|v| format!("{}", v))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+
+    // println!("\\\\ \n {}", x_k[0].clone().substitute(y, y_k[0].clone()));
+    // println!("\\\\ \n {}", x_k[1].clone().substitute(y, y_k[0].clone()));
 }
 
 // fn main() {

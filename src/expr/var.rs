@@ -73,6 +73,16 @@ impl Expr for ExVar {
             ExConst::new(ZERO).exprall()
         }
     }
+    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
+        self.var == var
+    }
+    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
+        if self.var == var {
+            expr
+        } else {
+            self.exprall()
+        }
+    }
     fn id(&self) -> Id {
         self.id
     }

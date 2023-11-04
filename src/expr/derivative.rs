@@ -81,6 +81,16 @@ impl Expr for ExDerivative {
         })
         .exprall()
     }
+    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
+        self.expr.has_explicit_dependence(var)
+    }
+    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
+        if self.var == var {
+            todo!("substitution on derivatives. needs chain rule probably");
+        } else {
+            ExDerivative::new(self.expr.substitute(var, expr), self.var, self.order).exprall()
+        }
+    }
     fn id(&self) -> super::Id {
         self.id
     }
