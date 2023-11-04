@@ -1,7 +1,7 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
 use crate::{
-    consts::{Const, NEG_ONE, ONE, ZERO},
+    consts::{Const, Rational, NEG_ONE, ONE, ZERO},
     util::expr_maker::ExprMaker,
 };
 
@@ -56,6 +56,18 @@ impl Expr for ExPow {
                 if let (Const::Int(base), Const::Int(exp)) = (base.1, exp.1) {
                     if exp >= 0 && exp < std::u32::MAX as i128 {
                         return ExConst::new(Const::Int(base.pow(exp as u32))).exprall();
+                    }
+                    if exp < 0 && -exp < std::u32::MAX as i128 {
+                        return ExConst::new(Const::Rational(Rational::new(
+                            base.signum().pow((-exp) as u32),
+                            base.unsigned_abs().pow((-exp) as u32),
+                        )))
+                        .exprall();
+                    }
+                }
+                if let (num, Const::Int(exp)) = (base.1, exp.1) {
+                    if exp >= std::i32::MIN as i128 && exp <= std::i32::MAX as i128 {
+                        return ExConst::new(num.pow(exp as i32)).exprall();
                     }
                 }
             } else {

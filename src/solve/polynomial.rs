@@ -66,23 +66,20 @@ impl Polynomial {
             2 => {
                 // two solutions, quadratic:  a x^2 + b x + c = 0  ->  x = (-b <+-> sqrt(b^2 - 4 a c))/(2 a)
                 let a = Raw(self.terms.get(&(trailing_n + 2)).unwrap().clone());
-                let b = Raw(
-                    self.terms
-                        .get(&(trailing_n + 1))
-                        .map(|it| it.clone())
-                        .unwrap_or(ExConst::new(ZERO).exprall()),
-                );
+                let b = Raw(self
+                    .terms
+                    .get(&(trailing_n + 1))
+                    .map(|it| it.clone())
+                    .unwrap_or(ExConst::new(ZERO).exprall()));
                 let c = Raw(self.terms.get(&trailing_n).unwrap().clone());
 
                 vec![
                     ((-b.clone()
-                        + (b.clone().squared() - ConstInt(4) * a.clone() * c.clone())
-                            .sqrt())
+                        + (b.clone().squared() - ConstInt(4) * a.clone() * c.clone()).sqrt())
                         / (ConstInt(2) * a.clone()))
                     .build(),
                     ((-b.clone()
-                        - (b.clone().squared() - ConstInt(4) * a.clone() * c.clone())
-                            .sqrt())
+                        - (b.clone().squared() - ConstInt(4) * a.clone() * c.clone()).sqrt())
                         / (ConstInt(2) * a.clone()))
                     .build(),
                 ]
@@ -202,7 +199,10 @@ impl Polynomial {
                 }
             }
             ExprAll::Divide(v) => Self::from_exprall(
-                ExPow::new(v.exprall(), ExConst::new(NEG_ONE).exprall()).exprall(),
+                ExProduct::new(vec![
+                    v.numerator().clone(),
+                    ExPow::new(v.denominator().clone(), ExConst::new(NEG_ONE).exprall()).exprall(),
+                ]).exprall(),
                 var,
             ),
             ExprAll::Pow(v) => {

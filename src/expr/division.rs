@@ -1,9 +1,14 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
-use crate::consts::{NEG_ONE, TWO, ONE, ZERO};
+use crate::consts::{NEG_ONE, ONE, TWO, ZERO};
 
 use super::{
-    consts::ExConst, pow::ExPow, product::ExProduct, sum::ExSum, var::{VarValues, Var}, Expr, ExprAll, Id,
+    consts::ExConst,
+    pow::ExPow,
+    product::ExProduct,
+    sum::ExSum,
+    var::{Var, VarValues},
+    Expr, ExprAll, Id,
 };
 
 #[derive(Debug)]

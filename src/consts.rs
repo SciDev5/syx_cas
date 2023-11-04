@@ -36,6 +36,20 @@ impl Rational {
         let den = nth_root_if_integer(self.den, exp.den as u32)?.checked_pow(exp.num as u32)?;
         Some(Self::new(num, den))
     }
+    fn pow_int(self, exp: i32) -> Self {
+        if exp < 0 {
+            self.reciprocol().pow_int(-exp)
+        } else {
+            Rational::new(self.num.pow(exp as u32), self.den.pow(exp as u32))
+        }
+    }
+
+    fn reciprocol(self) -> Self {
+        Rational::new(
+            self.den as i128 * self.num.signum(),
+            self.num.unsigned_abs(),
+        )
+    }
 
     fn abs(&self) -> Self {
         Rational::new(self.num.abs(), self.den)
@@ -325,6 +339,28 @@ impl Const {
                 ),
                 Self::RationalComplex(b) => (Self::RationalComplex(a), Self::RationalComplex(b)),
             },
+        }
+    }
+    pub fn pow(self, n: i32) -> Self {
+        if n == 0 && self.is_zero() {
+            todo!("handle indeterminate cases (here it's 0 ^ 0)");
+        }
+        if n == 0 {
+            return ONE;
+        }
+        if self.is_zero() {
+            return ZERO;
+        }
+        match self {
+            Self::Int(x) => Self::Rational(Rational::new(x, 1).pow_int(n)),
+            Self::Rational(x) => Self::Rational(x.pow_int(n)),
+            Self::RationalComplex(x) => Self::RationalComplex(
+                x.pow(RationalComplex::new(
+                    Rational::new(n as i128, 1),
+                    Rational::ZERO,
+                ))
+                .unwrap_or_else(|| todo!("handle intermediate cases where it's irrational")),
+            ),
         }
     }
 }
