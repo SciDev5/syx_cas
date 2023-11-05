@@ -72,21 +72,11 @@ impl Expr for ExSum {
         )
         .exprall()
     }
-    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
-        self.children()
-            .get_nonconsts()
-            .iter()
-            .any(|it| it.has_explicit_dependence(var))
+    fn child_exprs(self: &Rc<Self>) -> Vec<ExprAll> {
+        self.children().get_expralls()
     }
-    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
-        ExSum::new(
-            self.children()
-                .get_expralls()
-                .iter()
-                .map(|it| it.substitute(var, expr.clone()))
-                .collect(),
-        )
-        .exprall()
+    fn transform_children<F: Fn(&ExprAll) -> ExprAll>(self: &Rc<Self>, f: F) -> Rc<Self> {
+        ExSum::new(self.children().get_expralls().iter().map(f).collect())
     }
     fn id(&self) -> Id {
         self.0

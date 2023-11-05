@@ -34,11 +34,11 @@ impl Expr for ExConst {
     fn derivative(self: &Rc<Self>, _var: Var) -> ExprAll {
         Self::new(ZERO).exprall()
     }
-    fn has_explicit_dependence(self: &Rc<Self>, _var: Var) -> bool {
-        false
+    fn child_exprs(self: &Rc<Self>) -> Vec<ExprAll> {
+        vec![]
     }
-    fn substitute(self: &Rc<Self>, _var: Var, _expr: ExprAll) -> ExprAll {
-        self.exprall()
+    fn transform_children<F: Fn(&ExprAll) -> ExprAll>(self: &Rc<Self>, _f: F) -> Rc<Self> {
+        self.clone()
     }
     fn id(&self) -> Id {
         self.0

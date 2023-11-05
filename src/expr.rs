@@ -1,6 +1,7 @@
 use std::{hash, rc::Rc};
 
 use self::{
+    associative_commutative::ExprAssociativeCommuttative,
     consts::ExConst,
     derivative::ExDerivative,
     division::ExDivide,
@@ -34,9 +35,9 @@ pub trait Expr {
     /** Get the trivially simplified (ex. 0*k -> 0 but (a+3)(b+2) remains the same) ExprAll representing this Expr. */
     fn exprall(self: &Rc<Self>) -> ExprAll;
     fn derivative(self: &Rc<Self>, var: Var) -> ExprAll;
-    /** Returns true if this expression is written in terms of `var`. NOTE: May return true even if `var` will cancel out (ex: $x-x$ -> true). */
-    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool;
-    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll;
+
+    fn child_exprs(self: &Rc<Self>) -> Vec<ExprAll>;
+    fn transform_children<F: Fn(&ExprAll) -> ExprAll>(self: &Rc<Self>, f: F) -> Rc<Self>;
 }
 
 #[derive(Debug, Clone)]
@@ -95,30 +96,38 @@ impl ExprAll {
             Self::Derivative(v) => v.derivative(var),
         }
     }
+    /** Returns true if this expression is written in terms of `var`. NOTE: May return true even if `var` will cancel out (ex: $x-x$ -> true). */
     pub fn has_explicit_dependence(&self, var: Var) -> bool {
+        has_explicit_dependence(&self, var)
+    }
+    /** Recursively replace all instances of `var` with a replacement `ExprAll`. */
+    pub fn substitute(&self, var: Var, expr: &ExprAll) -> ExprAll {
+        substitute(&self, var, expr)
+    }
+    pub fn transform_children<F: Fn(&ExprAll) -> ExprAll>(&self, f: F) -> ExprAll {
         match self {
-            Self::Const(v) => v.has_explicit_dependence(var),
-            Self::Var(v) => v.has_explicit_dependence(var),
-            Self::Sum(v) => v.has_explicit_dependence(var),
-            Self::Product(v) => v.has_explicit_dependence(var),
-            Self::Pow(v) => v.has_explicit_dependence(var),
-            Self::Exp(v) => v.has_explicit_dependence(var),
-            Self::Ln(v) => v.has_explicit_dependence(var),
-            Self::Divide(v) => v.has_explicit_dependence(var),
-            Self::Derivative(v) => v.has_explicit_dependence(var),
+            Self::Const(v) => v.transform_children(f).exprall(),
+            Self::Var(v) => v.transform_children(f).exprall(),
+            Self::Sum(v) => v.transform_children(f).exprall(),
+            Self::Product(v) => v.transform_children(f).exprall(),
+            Self::Pow(v) => v.transform_children(f).exprall(),
+            Self::Exp(v) => v.transform_children(f).exprall(),
+            Self::Ln(v) => v.transform_children(f).exprall(),
+            Self::Divide(v) => v.transform_children(f).exprall(),
+            Self::Derivative(v) => v.transform_children(f).exprall(),
         }
     }
-    pub fn substitute(&self, var: Var, expr: ExprAll) -> ExprAll {
+    pub fn children(&self) -> Vec<ExprAll> {
         match self {
-            Self::Const(v) => v.substitute(var, expr),
-            Self::Var(v) => v.substitute(var, expr),
-            Self::Sum(v) => v.substitute(var, expr),
-            Self::Product(v) => v.substitute(var, expr),
-            Self::Pow(v) => v.substitute(var, expr),
-            Self::Exp(v) => v.substitute(var, expr),
-            Self::Ln(v) => v.substitute(var, expr),
-            Self::Divide(v) => v.substitute(var, expr),
-            Self::Derivative(v) => v.substitute(var, expr),
+            Self::Const(v) => v.child_exprs(),
+            Self::Var(v) => v.child_exprs(),
+            Self::Sum(v) => v.child_exprs(),
+            Self::Product(v) => v.child_exprs(),
+            Self::Pow(v) => v.child_exprs(),
+            Self::Exp(v) => v.child_exprs(),
+            Self::Ln(v) => v.child_exprs(),
+            Self::Divide(v) => v.child_exprs(),
+            Self::Derivative(v) => v.child_exprs(),
         }
     }
 }
@@ -132,5 +141,116 @@ impl Eq for ExprAll {}
 impl hash::Hash for ExprAll {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         state.write_u64(self.get_hash())
+    }
+}
+
+pub fn is_explicitly_zero(expr: &ExprAll) -> bool {
+    match expr {
+        ExprAll::Const(c) => c.1.is_zero(),
+        ExprAll::Derivative(v) => !has_explicit_dependence(&v.expr, v.var),
+        ExprAll::Divide(v) => {
+            is_explicitly_zero(v.numerator()) && is_explicitly_zero(v.denominator())
+        }
+        ExprAll::Exp(_v) => false,
+        ExprAll::Ln(v) => is_explicitly_one(v.argument()),
+        ExprAll::Pow(v) => is_explicitly_zero(v.base()) && !is_explicitly_zero(v.exponent()),
+        ExprAll::Product(v) => v.children().get_expralls().iter().all(is_explicitly_zero),
+        ExprAll::Sum(v) => v.children().get_expralls().iter().all(is_explicitly_zero),
+        ExprAll::Var(_) => false,
+    }
+}
+pub fn is_explicitly_one(expr: &ExprAll) -> bool {
+    match expr {
+        ExprAll::Const(c) => c.1.is_one(),
+        ExprAll::Derivative(_v) => false,
+        ExprAll::Divide(_v) => false, // should automatically cancel
+        ExprAll::Exp(v) => is_explicitly_zero(&v.exprall()),
+        ExprAll::Ln(_v) => is_explicitly_zero(expr),
+        ExprAll::Pow(v) => {
+            is_explicitly_zero(v.exponent()) && !is_explicitly_zero(v.base())
+                || is_explicitly_one(v.base()) && !is_explicitly_zero(v.exponent())
+        }
+        ExprAll::Product(_v) => false, // should automatically reduce
+        ExprAll::Sum(_v) => false,     // should automatically reduce
+        ExprAll::Var(_) => false,
+    }
+}
+
+/** Returns true if this expression is written in terms of `var`. NOTE: May return true even if `var` will cancel out (ex: $x-x$ -> true). */
+pub fn has_explicit_dependence(expr: &ExprAll, var: Var) -> bool {
+    match expr {
+        ExprAll::Var(v) => v.var == var,
+        expr => expr
+            .children()
+            .into_iter()
+            .any(|it| has_explicit_dependence(&it, var)),
+    }
+}
+/** Recursively replace all instances of `var` with a replacement `ExprAll`. */
+pub fn substitute(expr: &ExprAll, var: Var, replacement: &ExprAll) -> ExprAll {
+    match expr {
+        ExprAll::Var(v) => {
+            if v.var == var {
+                replacement.clone()
+            } else {
+                v.exprall()
+            }
+        }
+        expr => expr.transform_children(|it| substitute(it, var, replacement)),
+    }
+}
+
+/**
+ * Distribute products of sums into sums of products recursively.
+ * 
+ * Respects noncommutability.
+ */
+pub fn distribute_sum_product(expr: &ExprAll) -> ExprAll {
+    match expr {
+        ExprAll::Product(product) => {
+            let product = product.transform_children(distribute_sum_product);
+
+            if product
+                .children()
+                .get_nonconsts()
+                .iter()
+                .all(|v| !matches!(v, ExprAll::Sum(_)))
+            {
+                product.exprall()
+            } else {
+                let mut sum_of_terms = vec![vec![product.children().get_consts().exprall()]];
+                let mut next_sum_of_terms = vec![];
+                for product_child in product.children().get_nonconsts().iter() {
+                    if let ExprAll::Sum(sum) = product_child {
+                        for sum_child in &sum
+                            .children()
+                            .get_expralls_filtering(|const_term| const_term.is_zero())
+                        {
+                            for term in &sum_of_terms {
+                                let mut term = term.clone();
+                                term.push(sum_child.clone());
+                                next_sum_of_terms.push(term);
+                            }
+                        }
+
+                        std::mem::swap(&mut sum_of_terms, &mut next_sum_of_terms);
+                        next_sum_of_terms.clear();
+                    } else {
+                        for term in &mut sum_of_terms {
+                            term.push(product_child.clone());
+                        }
+                    }
+                }
+                ExSum::new(
+                    sum_of_terms
+                        .into_iter()
+                        .map(|term| ExProduct::new(term).exprall())
+                        .collect(),
+                )
+                .exprall()
+            }
+        }
+        // else just return unchanged,
+        expr => expr.transform_children(distribute_sum_product),
     }
 }

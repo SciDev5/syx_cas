@@ -73,15 +73,11 @@ impl Expr for ExVar {
             ExConst::new(ZERO).exprall()
         }
     }
-    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
-        self.var == var
+    fn child_exprs(self: &Rc<Self>) -> Vec<ExprAll> {
+        vec![]
     }
-    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
-        if self.var == var {
-            expr
-        } else {
-            self.exprall()
-        }
+    fn transform_children<F: Fn(&ExprAll) -> ExprAll>(self: &Rc<Self>, _f: F) -> Rc<Self> {
+        self.clone()
     }
     fn id(&self) -> Id {
         self.id

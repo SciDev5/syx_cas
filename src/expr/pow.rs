@@ -7,6 +7,8 @@ use crate::{
 
 use super::{
     consts::ExConst,
+    exp::ExExp,
+    product::ExProduct,
     var::{Var, VarValues},
     Expr, ExprAll, Id,
 };
@@ -77,7 +79,8 @@ impl Expr for ExPow {
                     return ExConst::new(ONE).exprall();
                 }
             }
-        } else if let ExprAll::Const(base) = self.base() {
+        }
+        if let ExprAll::Const(base) = self.base() {
             if base.1.is_zero() {
                 // 0 ^ x = 0 and x > 0
                 // TODO enforce x > 0
@@ -87,6 +90,12 @@ impl Expr for ExPow {
                 // 1 ^ x = 1 (always, even in the limit as $x \to \pm\infty$ because it's a const here)
                 return ExConst::new(ONE).exprall();
             }
+        }
+        if let ExprAll::Exp(exp) = self.base() {
+            return ExExp::new(
+                ExProduct::new(vec![exp.exponent().clone(), self.exponent().clone()]).exprall(),
+            )
+            .exprall();
         }
         ExprAll::Pow(self.clone())
     }
@@ -117,15 +126,11 @@ impl Expr for ExPow {
             }
         }
     }
-    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
-        self.base().has_explicit_dependence(var) || self.exponent().has_explicit_dependence(var)
+    fn child_exprs(self: &Rc<Self>) -> Vec<ExprAll> {
+        vec![self.base().clone(), self.exponent().clone()]
     }
-    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
-        ExPow::new(
-            self.base().substitute(var, expr.clone()),
-            self.exponent().substitute(var, expr),
-        )
-        .exprall()
+    fn transform_children<F: Fn(&ExprAll) -> ExprAll>(self: &Rc<Self>, f: F) -> Rc<Self> {
+        ExPow::new(f(self.base()), f(self.exponent()))
     }
     fn id(&self) -> Id {
         self.0

@@ -1,6 +1,6 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 
-use crate::consts::ONE;
+use crate::consts::ZERO;
 
 use super::{
     consts::ExConst,
@@ -31,9 +31,9 @@ impl Expr for ExLn {
     }
     fn exprall(self: &Rc<Self>) -> ExprAll {
         match self.argument() {
-            ExprAll::Const(exp) => {
-                if exp.1.is_zero() {
-                    return ExConst::new(ONE).exprall();
+            ExprAll::Const(arg) => {
+                if arg.1.is_one() {
+                    return ExConst::new(ZERO).exprall();
                 }
             }
             // NOTE: $\ln(\exp(x)) = x + 2 \pi i n$ for all integer $n$, and so cannot be simply reduced
@@ -48,11 +48,11 @@ impl Expr for ExLn {
         )
         .exprall()
     }
-    fn has_explicit_dependence(self: &Rc<Self>, var: Var) -> bool {
-        self.argument().has_explicit_dependence(var)
+    fn child_exprs(self: &Rc<Self>) -> Vec<ExprAll> {
+        vec![self.argument().clone()]
     }
-    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
-        ExLn::new(self.argument().substitute(var, expr)).exprall()
+    fn transform_children<F: Fn(&ExprAll) -> ExprAll>(self: &Rc<Self>, f: F) -> Rc<Self> {
+        ExLn::new(f(self.argument()))
     }
     fn id(&self) -> Id {
         self.0

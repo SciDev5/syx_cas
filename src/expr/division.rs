@@ -3,12 +3,7 @@ use std::{collections::hash_map::DefaultHasher, hash::Hasher, rc::Rc};
 use crate::consts::{NEG_ONE, ONE, TWO, ZERO};
 
 use super::{
-    consts::ExConst,
-    pow::ExPow,
-    product::ExProduct,
-    sum::ExSum,
-    var::{Var, VarValues},
-    Expr, ExprAll, Id,
+    consts::ExConst, pow::ExPow, product::ExProduct, sum::ExSum, var::VarValues, Expr, ExprAll, Id,
 };
 
 #[derive(Debug)]
@@ -71,16 +66,11 @@ impl Expr for ExDivide {
         )
         .exprall()
     }
-    fn has_explicit_dependence(self: &Rc<Self>, var: super::var::Var) -> bool {
-        self.numerator().has_explicit_dependence(var)
-            || self.denominator().has_explicit_dependence(var)
+    fn child_exprs(self: &Rc<Self>) -> Vec<ExprAll> {
+        vec![self.numerator().clone(), self.denominator().clone()]
     }
-    fn substitute(self: &Rc<Self>, var: Var, expr: ExprAll) -> ExprAll {
-        ExDivide::new(
-            self.numerator().substitute(var, expr.clone()),
-            self.denominator().substitute(var, expr),
-        )
-        .exprall()
+    fn transform_children<F: Fn(&ExprAll) -> ExprAll>(self: &Rc<Self>, f: F) -> Rc<Self> {
+        ExDivide::new(f(self.numerator()), f(self.denominator()))
     }
     fn id(&self) -> Id {
         self.0

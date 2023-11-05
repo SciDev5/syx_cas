@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use crate::{
     consts::{Const, NEG_ONE, ONE, ZERO},
     expr::{
+        self,
         associative_commutative::ExprAssociativeCommuttative,
         consts::ExConst,
         pow::ExPow,
@@ -132,7 +133,7 @@ impl Polynomial {
 
     pub fn clear_zero_coefficients(&mut self) {
         for i in self.terms.keys().map(|v| *v).collect::<Vec<_>>() {
-            if is_explicitly_zero(self.terms.get(&i).unwrap()) {
+            if expr::is_explicitly_zero(self.terms.get(&i).unwrap()) {
                 self.terms.remove(&i);
             }
         }
@@ -183,26 +184,12 @@ impl Polynomial {
                 .into_iter()
                 .map(|v| Self::from_exprall(v, var))
                 .product(),
-            ExprAll::Derivative(_) => todo!("handle polynomials with residual derivatives in them"),
-            ExprAll::Ln(v) => {
-                if v.has_explicit_dependence(var) {
-                    None
-                } else {
-                    Some(Self::new_of_const(v.exprall()))
-                }
-            }
-            ExprAll::Exp(v) => {
-                if v.has_explicit_dependence(var) {
-                    None
-                } else {
-                    Some(Self::new_of_const(v.exprall()))
-                }
-            }
             ExprAll::Divide(v) => Self::from_exprall(
                 ExProduct::new(vec![
                     v.numerator().clone(),
                     ExPow::new(v.denominator().clone(), ExConst::new(NEG_ONE).exprall()).exprall(),
-                ]).exprall(),
+                ])
+                .exprall(),
                 var,
             ),
             ExprAll::Pow(v) => {
@@ -222,6 +209,13 @@ impl Polynomial {
                     ExPow::new(base.1, ExConst::new(Const::Int(exponent)).exprall()).exprall(),
                 );
                 Some(Polynomial { terms })
+            }
+            expr => {
+                if expr::has_explicit_dependence(&expr, var) {
+                    None
+                } else {
+                    Some(Self::new_of_const(expr))
+                }
             }
         }
     }
@@ -300,37 +294,5 @@ impl std::ops::MulAssign<ExprAll> for Polynomial {
         for v in self.terms.values_mut() {
             *v = ExProduct::new(vec![v.clone(), rhs.clone()]).exprall();
         }
-    }
-}
-
-fn is_explicitly_zero(expr: &ExprAll) -> bool {
-    match expr {
-        ExprAll::Const(c) => c.1.is_zero(),
-        ExprAll::Derivative(v) => !v.has_explicit_dependence(v.var),
-        ExprAll::Divide(v) => {
-            is_explicitly_zero(v.numerator()) && is_explicitly_zero(v.denominator())
-        }
-        ExprAll::Exp(_v) => false,
-        ExprAll::Ln(v) => is_explicitly_one(v.argument()),
-        ExprAll::Pow(v) => is_explicitly_zero(v.base()) && !is_explicitly_zero(v.exponent()),
-        ExprAll::Product(v) => v.children().get_expralls().iter().all(is_explicitly_zero),
-        ExprAll::Sum(v) => v.children().get_expralls().iter().all(is_explicitly_zero),
-        ExprAll::Var(_) => false,
-    }
-}
-fn is_explicitly_one(expr: &ExprAll) -> bool {
-    match expr {
-        ExprAll::Const(c) => c.1.is_one(),
-        ExprAll::Derivative(_v) => false,
-        ExprAll::Divide(_v) => false, // should automatically cancel
-        ExprAll::Exp(v) => is_explicitly_zero(&v.exprall()),
-        ExprAll::Ln(_v) => is_explicitly_zero(expr),
-        ExprAll::Pow(v) => {
-            is_explicitly_zero(v.exponent()) && !is_explicitly_zero(v.base())
-                || is_explicitly_one(v.base()) && !is_explicitly_zero(v.exponent())
-        }
-        ExprAll::Product(_v) => false, // should automatically reduce
-        ExprAll::Sum(_v) => false,     // should automatically reduce
-        ExprAll::Var(_) => false,
     }
 }

@@ -4,7 +4,7 @@ use crate::{
         product::ExProduct,
         sum::ExSum,
         var::Var,
-        Expr, ExprAll,
+        Expr, ExprAll, self,
     },
     util::expr_maker::ExprMaker,
 };
@@ -62,6 +62,7 @@ impl Equality {
             // attempt to reduce the complexity of the problem
             attempt_reduce!(exprs => exprs_next, var; [
                 FnAndConstSolveReducer,
+                DistributeSolveReducer,
             ]);
 
             if exprs_next.is_empty() {
@@ -138,6 +139,18 @@ impl SingleVarSolveReducer for FnAndConstSolveReducer {
                 (ExprMaker::Raw(v.exponent().clone()) - (-const_part).ln()).build(),
             ],
             _ => vec![],
+        }
+    }
+}
+
+struct DistributeSolveReducer;
+impl SingleVarSolveReducer for DistributeSolveReducer {
+    fn reduce(&self, expr: &ExprAll, _var: Var) -> Vec<ExprAll> {
+        let distributed = expr::distribute_sum_product(expr);
+        if &distributed == expr {
+            vec![]
+        } else {
+            vec![distributed]
         }
     }
 }
