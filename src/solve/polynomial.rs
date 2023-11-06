@@ -55,38 +55,109 @@ impl Polynomial {
         let leading_n = *self.terms.keys().max().unwrap();
         let trailing_n = *self.terms.keys().min().unwrap();
 
+        macro_rules! term {
+            ($i: expr) => {
+                Raw(self
+                    .terms
+                    .get(&(trailing_n + $i))
+                    .map(|it| it.clone())
+                    .unwrap_or(ExConst::new(ZERO).exprall()))
+            };
+        }
+        macro_rules! has_term {
+            ($i: expr) => {
+                self.terms.get(&(trailing_n+$i)).is_some()
+            };
+        }
+
+        
         let order = leading_n - trailing_n;
         let mut solutions = match order {
             0 => {
                 // no solutions dependent on x:  c = 0  ->  never  // TODO distinguish this from failure
-                return None;
+                if leading_n > 0 {
+                    vec![] // let the default zero roots thing do its thing.
+                } else {
+                    return None; // else fail out now, the zero roots will be empty
+                }
             }
             1 => {
                 // one solution, linear:  bx + c = 0  ->  x = -c/b
-                let b = Raw(self.terms.get(&(trailing_n + 1)).unwrap().clone());
-                let c = Raw(self.terms.get(&trailing_n).unwrap().clone());
+                let b = term!(1);
+                let c = term!(0);
                 vec![(-c / b).build()]
             }
             2 => {
                 // two solutions, quadratic:  a x^2 + b x + c = 0  ->  x = (-b <+-> sqrt(b^2 - 4 a c))/(2 a)
-                let a = Raw(self.terms.get(&(trailing_n + 2)).unwrap().clone());
-                let b = Raw(self
-                    .terms
-                    .get(&(trailing_n + 1))
-                    .map(|it| it.clone())
-                    .unwrap_or(ExConst::new(ZERO).exprall()));
-                let c = Raw(self.terms.get(&trailing_n).unwrap().clone());
+                let a = term!(2);
+                let b = term!(1);
+                let c = term!(0);
 
                 vec![
-                    ((-b.clone()
-                        + (b.clone().squared() - ConstInt(4) * a.clone() * c.clone()).sqrt())
-                        / (ConstInt(2) * a.clone()))
-                    .build(),
-                    ((-b.clone()
-                        - (b.clone().squared() - ConstInt(4) * a.clone() * c.clone()).sqrt())
-                        / (ConstInt(2) * a.clone()))
-                    .build(),
+                    ((-&b + (b.ref_squared() - 4 * &a * &c).sqrt()) / (2 * &a)).build(),
+                    ((-&b - (b.ref_squared() - 4 * &a * &c).sqrt()) / (2 * &a)).build(),
                 ]
+            }
+            4 => {
+                if !has_term!(3) && !has_term!(1) {
+                    let a = term!(4);
+                    let b = term!(2);
+                    let c = term!(0);
+
+                    let r0 = (-&b + (b.ref_squared() - 4 * &a * &c).sqrt()) / (2 * &a);
+                    let r1 = (-&b - (b.ref_squared() - 4 * &a * &c).sqrt()) / (2 * &a);
+
+                    [
+                        r0.clone().sqrt(),
+                        -r0.clone().sqrt(),
+                        r1.clone().sqrt(),
+                        -r1.clone().sqrt(),
+                    ].into_iter().map(|v| v.build()).collect()
+                } else {
+                    let a = term!(4);
+                    let b = term!(3);
+                    let c = term!(2);
+                    let d = term!(1);
+                    let e = term!(0);
+    
+                    let half = ConstInt(1) / ConstInt(2);
+    
+                    let delta_0 = Raw((c.ref_squared() - 3 * &b * &d + 12 * &a * &e).build());
+                    let delta_1 = Raw((2 * c.ref_cubed() - 9 * &b * &c * &d
+                        + 27 * b.ref_squared() * &e
+                        + 27 * &a * d.ref_squared()
+                        - 72 * &a * &c * &e)
+                        .build());
+    
+                    let p = Raw(((8 * &a * &c - 3 * b.ref_squared()) / (8 * a.ref_squared())).build());
+                    let q = Raw(
+                        ((b.ref_cubed() - 4 * &a * &b * &c + 8 * a.ref_squared() * &d)
+                            / (8 * a.ref_cubed()))
+                        .build(),
+                    );
+    
+                    let qq = ((&delta_1 + (delta_1.ref_squared() - 4 * delta_0.ref_cubed()).sqrt())
+                        / ConstInt(2))
+                    .pow(ConstInt(1) / ConstInt(3));
+                    let ss = (-2 * &p / ConstInt(3) + (&qq + &delta_0 / &qq) / (3 * a.clone())).sqrt()
+                        / ConstInt(2);
+                    vec![
+                        (-&b / (4 * &a) - &ss
+                            + &half * (-4 * ss.ref_squared() - 2 * &p + &q / &ss).sqrt())
+                        .build(),
+                        (-&b / (4 * &a)
+                            - &ss
+                            - &half * (-4 * ss.ref_squared() - 2 * &p + &q / &ss).sqrt())
+                        .build(),
+                        (-&b / (4 * &a)
+                            + &ss
+                            + &half * (-4 * ss.ref_squared() - 2 * &p - &q / &ss).sqrt())
+                        .build(),
+                        (-&b / (4 * &a) + &ss
+                            - &half * (-4 * ss.ref_squared() - 2 * &p - &q / &ss).sqrt())
+                        .build(),
+                    ]
+                }
             }
             _ => return None, // TODO
         };

@@ -292,6 +292,13 @@ impl Const {
             Self::RationalComplex(v) => v.is_one(),
         }
     }
+    pub fn is_negative_one(&self) -> bool {
+        match self {
+            Self::Int(v) => *v == -1,
+            Self::Rational(v) => v.is_negative_one(),
+            Self::RationalComplex(v) => v.real.is_negative_one() && v.imag.is_zero(),
+        }
+    }
     pub fn is_complex(&self) -> bool {
         match self {
             Self::RationalComplex(v) => !v.real.is_zero() && !v.imag.is_zero(),

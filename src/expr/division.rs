@@ -42,6 +42,9 @@ impl Expr for ExDivide {
             if den.1.is_one() {
                 return self.numerator().clone();
             }
+            if den.1.is_negative_one() {
+                return ExProduct::new(vec![ExConst::new(NEG_ONE).exprall(),self.numerator().clone()]).exprall();
+            }
         } else if let ExprAll::Const(num) = self.numerator() {
             if num.1.is_zero() {
                 return ExprAll::Const(ExConst::new(ZERO));

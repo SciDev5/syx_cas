@@ -80,6 +80,12 @@ impl Equality {
     }
 }
 
+impl std::fmt::Display for Equality {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,"{} = 0", self.expr_that_equals_zero())
+    }
+}
+
 type SolutionList = Vec<ExprAll>;
 
 trait SingleVarSolver {

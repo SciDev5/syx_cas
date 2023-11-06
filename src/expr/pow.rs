@@ -83,12 +83,10 @@ impl Expr for ExPow {
                         }
                     }
                 }
-            } else {
-                if exp.1.is_zero() {
-                    // x ^ 0 = 1 and x != 0
-                    // TODO enforce x != 0
-                    return ExConst::new(ONE).exprall();
-                }
+            } else if exp.1.is_zero() {
+                // x ^ 0 = 1 and x != 0
+                // TODO enforce x != 0
+                return ExConst::new(ONE).exprall();
             }
         }
         if let ExprAll::Const(base) = self.base() {
@@ -105,6 +103,13 @@ impl Expr for ExPow {
         if let ExprAll::Exp(exp) = self.base() {
             return ExExp::new(
                 ExProduct::new(vec![exp.exponent().clone(), self.exponent().clone()]).exprall(),
+            )
+            .exprall();
+        }
+        if let ExprAll::Pow(sub_pow) = self.base() {
+            return ExPow::new(
+                sub_pow.base().clone(),
+                ExProduct::new(vec![sub_pow.exponent().clone(), self.exponent().clone()]).exprall(),
             )
             .exprall();
         }

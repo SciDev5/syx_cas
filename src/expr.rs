@@ -1,5 +1,7 @@
 use std::{hash, rc::Rc};
 
+use crate::consts::{Const, NEG_ONE, ONE};
+
 use self::{
     associative_commutative::ExprAssociativeCommuttative,
     consts::ExConst,
@@ -200,9 +202,42 @@ pub fn substitute(expr: &ExprAll, var: Var, replacement: &ExprAll) -> ExprAll {
     }
 }
 
+fn dspi(children_consts: ExprAll, children: &[ExprAll]) -> ExprAll {
+    let mut sum_of_terms = vec![vec![children_consts]];
+    let mut next_sum_of_terms = vec![];
+    for product_child in children.iter() {
+        if let ExprAll::Sum(sum) = product_child {
+            for sum_child in &sum
+                .children()
+                .get_expralls_filtering(|const_term| const_term.is_zero())
+            {
+                for term in &sum_of_terms {
+                    let mut term = term.clone();
+                    term.push(sum_child.clone());
+                    next_sum_of_terms.push(term);
+                }
+            }
+
+            std::mem::swap(&mut sum_of_terms, &mut next_sum_of_terms);
+            next_sum_of_terms.clear();
+        } else {
+            for term in &mut sum_of_terms {
+                term.push(product_child.clone());
+            }
+        }
+    }
+    ExSum::new(
+        sum_of_terms
+            .into_iter()
+            .map(|term| ExProduct::new(term).exprall())
+            .collect(),
+    )
+    .exprall()
+}
+
 /**
  * Distribute products of sums into sums of products recursively.
- * 
+ *
  * Respects noncommutability.
  */
 pub fn distribute_sum_product(expr: &ExprAll) -> ExprAll {
@@ -218,36 +253,35 @@ pub fn distribute_sum_product(expr: &ExprAll) -> ExprAll {
             {
                 product.exprall()
             } else {
-                let mut sum_of_terms = vec![vec![product.children().get_consts().exprall()]];
-                let mut next_sum_of_terms = vec![];
-                for product_child in product.children().get_nonconsts().iter() {
-                    if let ExprAll::Sum(sum) = product_child {
-                        for sum_child in &sum
-                            .children()
-                            .get_expralls_filtering(|const_term| const_term.is_zero())
-                        {
-                            for term in &sum_of_terms {
-                                let mut term = term.clone();
-                                term.push(sum_child.clone());
-                                next_sum_of_terms.push(term);
-                            }
-                        }
-
-                        std::mem::swap(&mut sum_of_terms, &mut next_sum_of_terms);
-                        next_sum_of_terms.clear();
-                    } else {
-                        for term in &mut sum_of_terms {
-                            term.push(product_child.clone());
-                        }
-                    }
-                }
-                ExSum::new(
-                    sum_of_terms
-                        .into_iter()
-                        .map(|term| ExProduct::new(term).exprall())
-                        .collect(),
+                dspi(
+                    product.children().get_consts().exprall(),
+                    &product.children().get_nonconsts(),
                 )
-                .exprall()
+            }
+        }
+        ExprAll::Divide(div) => {
+            let div = div.transform_children(distribute_sum_product);
+            dspi(
+                ExPow::new(div.denominator().clone(), ExConst::new(NEG_ONE).exprall()).exprall(),
+                &[div.numerator().clone()],
+            )
+        }
+        ExprAll::Pow(p) => {
+            if let ExprAll::Const(c) = p.exponent() {
+                if let Const::Int(i) = c.1 {
+                    if i >= 2 && i < 5 {
+                        dspi(
+                            ExConst::new(ONE).exprall(),
+                            &vec![distribute_sum_product(p.base()); i as usize],
+                        )
+                    } else {
+                        p.transform_children(distribute_sum_product).exprall()
+                    }
+                } else {
+                    p.transform_children(distribute_sum_product).exprall()
+                }
+            } else {
+                p.transform_children(distribute_sum_product).exprall()
             }
         }
         // else just return unchanged,

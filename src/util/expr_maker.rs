@@ -38,10 +38,47 @@ impl std::ops::Add for ExprMaker {
     }
 }
 
+impl std::ops::Add for &ExprMaker {
+    type Output = ExprMaker;
+    fn add(self, rhs: Self) -> Self::Output {
+        self.clone() + rhs.clone()
+    }
+}
+impl std::ops::Add<ExprMaker> for &ExprMaker {
+    type Output = ExprMaker;
+    fn add(self, rhs: ExprMaker) -> Self::Output {
+        self.clone() + rhs
+    }
+}
+impl std::ops::Add<&ExprMaker> for ExprMaker {
+    type Output = ExprMaker;
+    fn add(self, rhs: &ExprMaker) -> Self::Output {
+        self + rhs.clone()
+    }
+}
+
 impl std::ops::Sub for ExprMaker {
     type Output = ExprMaker;
     fn sub(self, rhs: Self) -> Self::Output {
         Add(Box::new(self), Box::new(rhs * ConstInt(-1)))
+    }
+}
+impl std::ops::Sub for &ExprMaker {
+    type Output = ExprMaker;
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.clone() - rhs.clone()
+    }
+}
+impl std::ops::Sub<ExprMaker> for &ExprMaker {
+    type Output = ExprMaker;
+    fn sub(self, rhs: ExprMaker) -> Self::Output {
+        self.clone() - rhs
+    }
+}
+impl std::ops::Sub<&ExprMaker> for ExprMaker {
+    type Output = ExprMaker;
+    fn sub(self, rhs: &ExprMaker) -> Self::Output {
+        self - rhs.clone()
     }
 }
 
@@ -51,6 +88,12 @@ impl std::ops::Neg for ExprMaker {
         self * ConstInt(-1)
     }
 }
+impl std::ops::Neg for &ExprMaker {
+    type Output = ExprMaker;
+    fn neg(self) -> Self::Output {
+        -self.clone()
+    }
+}
 
 impl std::ops::Mul for ExprMaker {
     type Output = ExprMaker;
@@ -58,11 +101,47 @@ impl std::ops::Mul for ExprMaker {
         Mul(Box::new(self), Box::new(rhs))
     }
 }
+impl std::ops::Mul for &ExprMaker {
+    type Output = ExprMaker;
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.clone() * rhs.clone()
+    }
+}
+impl std::ops::Mul<ExprMaker> for &ExprMaker {
+    type Output = ExprMaker;
+    fn mul(self, rhs: ExprMaker) -> Self::Output {
+        self.clone() * rhs
+    }
+}
+impl std::ops::Mul<&ExprMaker> for ExprMaker {
+    type Output = ExprMaker;
+    fn mul(self, rhs: &ExprMaker) -> Self::Output {
+        self * rhs.clone()
+    }
+}
+impl std::ops::Mul<ExprMaker> for i128 {
+    type Output = ExprMaker;
+    fn mul(self, rhs: ExprMaker) -> Self::Output {
+        ConstInt(self) * rhs
+    }
+}
+impl std::ops::Mul<&ExprMaker> for i128 {
+    type Output = ExprMaker;
+    fn mul(self, rhs: &ExprMaker) -> Self::Output {
+        ConstInt(self) * rhs.clone()
+    }
+}
 
 impl std::ops::Div for ExprMaker {
     type Output = ExprMaker;
     fn div(self, rhs: Self) -> Self::Output {
         Div(Box::new(self), Box::new(rhs))
+    }
+}
+impl std::ops::Div for &ExprMaker {
+    type Output = ExprMaker;
+    fn div(self, rhs: Self) -> Self::Output {
+        self.clone() / rhs.clone()
     }
 }
 
@@ -88,6 +167,15 @@ impl ExprMaker {
     }
     pub fn squared(self) -> Self {
         Pow(Box::new(self), Box::new(ExprMaker::ConstInt(2)))
+    }
+    pub fn cubed(self) -> Self {
+        Pow(Box::new(self), Box::new(ExprMaker::ConstInt(3)))
+    }
+    pub fn ref_squared(&self) -> Self {
+        self.clone().squared()
+    }
+    pub fn ref_cubed(&self) -> Self {
+        self.clone().cubed()
     }
     pub fn sqrt(self) -> Self {
         Pow(Box::new(self), Box::new(ExprMaker::ConstRaw(HALF)))

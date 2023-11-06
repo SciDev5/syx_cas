@@ -4,7 +4,7 @@ use std::fmt;
 
 use crate::{
     consts::Const,
-    expr::{associative_commutative::ExprAssociativeCommuttative, ExprAll},
+    expr::{associative_commutative::ExprAssociativeCommuttative, ExprAll, Expr},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -44,6 +44,8 @@ fn write_child(
 ) -> fmt::Result {
     if expr_precedence(child) < outer_precedence {
         write!(f, "{}\\left( {} \\right)", separator_pre_paren, child)
+    } else if let (ExprFmtPrecedence::E, ExprAll::Const(child)) = (outer_precedence, child) {
+        write!(f, "\\left( {} \\right)", child.exprall())
     } else {
         write!(f, "{}", child)
     }
