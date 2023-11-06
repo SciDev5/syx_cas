@@ -47,7 +47,7 @@ impl Polynomial {
         }
     }
 
-    pub fn zeros(mut self) -> Vec<ExprAll> {
+    pub fn zeros(mut self) -> Option<Vec<ExprAll>> {
         self.clear_zero_coefficients();
         if self.terms.len() == 0 {
             todo!("return INFINITE SOLUTIONS (placeholder values: real)");
@@ -57,7 +57,10 @@ impl Polynomial {
 
         let order = leading_n - trailing_n;
         let mut solutions = match order {
-            0 => vec![], // no solutions:  c = 0, c != 0  ->  never
+            0 => {
+                // no solutions dependent on x:  c = 0  ->  never  // TODO distinguish this from failure
+                return None;
+            }
             1 => {
                 // one solution, linear:  bx + c = 0  ->  x = -c/b
                 let b = Raw(self.terms.get(&(trailing_n + 1)).unwrap().clone());
@@ -85,7 +88,7 @@ impl Polynomial {
                     .build(),
                 ]
             }
-            _ => vec![], // TODO
+            _ => return None, // TODO
         };
 
         if trailing_n > 0 {
@@ -95,7 +98,7 @@ impl Polynomial {
             // TODO add condition that x != 0
         }
 
-        solutions
+        Some(solutions)
     }
 
     pub fn leading(&self) -> Option<(i128, ExprAll)> {

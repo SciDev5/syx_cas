@@ -72,6 +72,17 @@ impl Expr for ExPow {
                         return ExConst::new(num.pow(exp as i32)).exprall();
                     }
                 }
+                if let (base, Const::Rational(exp)) = (base.1, exp.1) {
+                    if let Some(base) = match base {
+                        Const::Int(i) => Some(Rational::new(i, 1)),
+                        Const::Rational(r) => Some(r),
+                        _ => None,
+                    } {
+                        if let Some(result) = base.pow(exp) {
+                            return ExConst::new(Const::Rational(result)).exprall();
+                        }
+                    }
+                }
             } else {
                 if exp.1.is_zero() {
                     // x ^ 0 = 1 and x != 0

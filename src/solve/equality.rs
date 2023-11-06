@@ -11,6 +11,7 @@ use crate::{
 
 use super::polynomial::Polynomial;
 
+#[derive(Debug, Clone)]
 pub struct Equality(ExprAll);
 
 impl Equality {
@@ -21,6 +22,10 @@ impl Equality {
         Self::new_expr_eq_0((ExprMaker::Raw(rhs) - ExprMaker::Raw(lhs)).build())
     }
 
+    pub fn expr_that_equals_zero(&self) -> &ExprAll {
+        &self.0
+    }
+    
     pub fn solve_for(&self, var: Var) -> Option<SolutionList> {
         let mut exprs = vec![self.0.clone()];
         let mut exprs_next = vec![];
@@ -94,7 +99,7 @@ struct PolynomialSolver;
 impl SingleVarSolver for PolynomialSolver {
     fn solve(&self, expr: &ExprAll, var: Var) -> Option<SolutionList> {
         let polynomial = Polynomial::from_exprall(expr.clone(), var)?;
-        Some(polynomial.zeros())
+        polynomial.zeros()
     }
 }
 
@@ -137,6 +142,10 @@ impl SingleVarSolveReducer for FnAndConstSolveReducer {
             [ExprAll::Exp(v)] => vec![
                 // exp(f(x)) + c = 0  ->  f(x) - ln(-c) = 0   ;; TODO (+ 2 pi i n) offset
                 (ExprMaker::Raw(v.exponent().clone()) - (-const_part).ln()).build(),
+            ],
+            [ExprAll::Ln(v)] => vec![
+                // ln(f(x)) + c = 0  ->  f(x) - exp(-c) = 0
+                (ExprMaker::Raw(v.argument().clone()) - (-const_part).exp()).build(),
             ],
             _ => vec![],
         }

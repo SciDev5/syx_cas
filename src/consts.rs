@@ -23,7 +23,7 @@ impl Rational {
         self.num as f64 / self.den as f64
     }
 
-    fn pow(self, exp: Self) -> Option<Self> {
+    pub fn pow(self, exp: Self) -> Option<Self> {
         if exp.num > u32::MAX as i128 || exp.den > u32::MAX as u128 {
             return None; // no way it's rational and in range lmao (plus we can't handle numbers that big anyway)
         }
