@@ -1,6 +1,6 @@
 use std::{hash, rc::Rc};
 
-use crate::consts::{Const, NEG_ONE, ONE};
+use crate::consts::{Const, NEG_ONE, ONE, ZERO};
 
 use self::{
     associative_commutative::ExprAssociativeCommuttative,
@@ -143,6 +143,46 @@ impl Eq for ExprAll {}
 impl hash::Hash for ExprAll {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         state.write_u64(self.get_hash())
+    }
+}
+impl Default for ExprAll {
+    fn default() -> Self {
+        ExConst::new(ZERO).exprall()
+    }
+}
+
+impl std::ops::Add for ExprAll {
+    type Output = ExprAll;
+    fn add(self, rhs: Self) -> Self::Output {
+        ExSum::new(vec![self, rhs]).exprall()
+    }
+}
+impl std::ops::AddAssign for ExprAll {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = self.clone() + rhs
+    }
+}
+impl std::ops::Neg for ExprAll {
+    type Output = ExprAll;
+    fn neg(self) -> Self::Output {
+        ExProduct::new(vec![ExConst::new(NEG_ONE).exprall(), self]).exprall()
+    }
+}
+impl std::ops::Sub for ExprAll {
+    type Output = ExprAll;
+    fn sub(self, rhs: Self) -> Self::Output {
+        self + (-rhs)
+    }
+}
+impl std::ops::Mul for ExprAll {
+    type Output = ExprAll;
+    fn mul(self, rhs: Self) -> Self::Output {
+        ExProduct::new(vec![self, rhs]).exprall()
+    }
+}
+impl std::iter::Sum for ExprAll {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        ExSum::new(iter.collect()).exprall()
     }
 }
 
