@@ -102,6 +102,13 @@ impl ExprAll {
     pub fn has_explicit_dependence(&self, var: Var) -> bool {
         has_explicit_dependence(&self, var)
     }
+    /** Returns true if this expression contains any variables. */
+    pub fn has_vars(&self) -> bool {
+        match self {
+            Self::Var(_) => true,
+            _ => self.children().iter().any(|v| v.has_vars()),
+        }
+    }
     /** Recursively replace all instances of `var` with a replacement `ExprAll`. */
     pub fn substitute(&self, var: Var, expr: &ExprAll) -> ExprAll {
         substitute(&self, var, expr)
